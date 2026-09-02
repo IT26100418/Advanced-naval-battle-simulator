@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include "setup.h"
+#include "part1A.h"
+
 int main(void)
 {
     Battlefield field;
-    //create the initial battlefield
-    initializeBattlefield(&field);
 
-    //display the battlefield details
+    initializeBattlefield(&field);
     displayBattlefield(&field);
+
+    runPart1A(&field);
 
     return 0;
 }
