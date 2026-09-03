@@ -38,20 +38,19 @@ static int canHit(
 {
     double distance;
     double maxRange;
-    double angle;
     double value;
+    double lowerAngle;
+    double upperAngle;
+    double angle;
 
     (void)minVelocity;
 
     distance=calculateDistance(attacker, target);
 
-    
-    //maximum projectile range occurs at 45 degrees
-    //use 45 degrees only if it is inside the allowed range
-    
-    if(maxAngle >= 45.0 && minAngle <= 45.0)
+//maximum range inside the allowed angle range.
+    if(minAngle <= 45.0 && maxAngle >= 45.0)
     {
-        angle = 45.0;
+        angle=45.0;
     }
     else if(maxAngle < 45.0)
     {
@@ -61,30 +60,38 @@ static int canHit(
     {
         angle=minAngle;
     }
+
     maxRange=calculateRange(maxVelocity, angle);
 
     if(distance > maxRange)
     {
         return 0;
     }
-//R = v² sin(2θ) / g
-    
-    value=(distance * GRAVITY) / (maxVelocity*maxVelocity);
 
+//calculate the two possible firing angles
+    value=(distance * GRAVITY) / (maxVelocity*maxVelocity);
     if(value > 1.0)
     {
-        value=1.0;
+        return 0;
     }
-
     if(value < 0.0)
     {
-        value=0.0;
+        return 0;
     }
+    lowerAngle=0.5*asin(value);
+    lowerAngle=lowerAngle * 180.0 / PI;
 
-    angle=0.5 * asin(value);
-    angle=angle * 180.0 / PI;
-
-    if(angle < minAngle || angle > maxAngle)
+    upperAngle=90.0 - lowerAngle;
+//use the lower angle if it is allowed,otherwise, use the upper angle
+    if(lowerAngle >= minAngle && lowerAngle <= maxAngle)
+    {
+        angle=lowerAngle;
+    }
+    else if(upperAngle >= minAngle && upperAngle <= maxAngle)
+    {
+        angle=upperAngle;
+    }
+    else
     {
         return 0;
     }
