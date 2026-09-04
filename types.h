@@ -1,17 +1,16 @@
 #ifndef TYPES_H
 #define TYPES_H
-//This file contains the main data types  used in the naval battle simulator
 
-//maximum number of escort ships
+/* Maximum number of escort ships */
 #define MAX_ESCORTS 100
 
-//maximum number of path points
+/* Maximum number of path points */
 #define MAX_PATH_POINTS 100
 
 #define GRAVITY 9.81
 #define PI 3.141592653589793
 
-//different escort ship types
+/* Different escort ship types */
 typedef enum
 {
     EA,
@@ -20,18 +19,24 @@ typedef enum
     ED,
     EE
 } EscortType;
-//different battleship types
+
+/* Different battleship types */
 typedef enum
 {
-    U, M, R, S
+    U,
+    M,
+    R,
+    S
 } BattleshipType;
-//current status of a ship
+
+/* Current status of a ship */
 typedef enum
 {
     ALIVE,
     SUNK
 } ShipStatus;
 
+/* 2D position */
 typedef struct
 {
     double x;
@@ -39,42 +44,68 @@ typedef struct
 } Point;
 
 
-//stores battleship details
+/* Stores battleship details */
 typedef struct
 {
     BattleshipType type;
     char notation;
+
     Point position;
+
     double maxVelocity;
+
     double health;
     double gamma;
+
     int shotsFired;
+
     ShipStatus status;
+
+    /*
+     * Details of the latest shell fired.
+     */
+    double lastShotVelocity;
+    double lastShotAngle;
+    double lastFlightTime;
 
 } Battleship;
 
 
-//stores escort ship details
+/* Stores escort ship details */
 typedef struct
 {
     int id;
+
     EscortType type;
+
     Point position;
+
     double minVelocity;
     double maxVelocity;
+
     double minAngle;
     double maxAngle;
+
     double impactPower;
     double gamma;
+
     double health;
+
     int shotsFired;
 
     ShipStatus status;
 
+    /*
+     * Details of the shell fired in Part 1-A.
+     */
+    double lastShotVelocity;
+    double lastShotAngle;
+    double lastFlightTime;
+
 } EscortShip;
 
 
-//stores one path point
+/* Stores one path point */
 typedef struct
 {
     Point position;
@@ -82,22 +113,31 @@ typedef struct
 } PathPoint;
 
 
-//stores the whole battlefield
+/* Stores the whole battlefield */
 typedef struct
 {
     double size;
+
     Battleship battleship;
+
     EscortShip escorts[MAX_ESCORTS];
+
     int escortCount;
 
 } Battlefield;
 
+
+/* Stores Part 1-B simulation settings */
 typedef struct
 {
     unsigned int randomSeed;
+
     int numberOfPathPoints;
+
     int gunJamIteration;
+
     double jamMinAngle;
 
 } SimulationSettings;
+
 #endif

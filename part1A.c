@@ -1,224 +1,433 @@
 #include <stdio.h>
-#include <math.h>
+
 #include "part1A.h"
+#include "common.h"
 
-//Internal helper functions
-static double calculateDistance(Point a, Point b)
-{
-    double dx=b.x - a.x;
-    double dy=b.y - a.y;
 
-    return sqrt(dx*dx + dy*dy);
-}
-static double degreesToRadians(double degrees)
-{
-    return degrees * PI/180.0;
-}
-static double calculateRange(double velocity, double angle)
-{
-    double radians=degreesToRadians(angle);
-    return(velocity*velocity*sin(2.0 * radians))/GRAVITY;
-}
-static double calculateFlightTime(double velocity, double angle)
-{
-    double radians=degreesToRadians(angle);
-    return (2.0 * velocity * sin(radians))/ GRAVITY;
-}
-
-//checks whether a projectile can hit the target
-// Returns 1 if hit is possible, otherwise 0.
-static int canHit(
-    Point attacker,
-    Point target,
-    double minVelocity,
-    double maxVelocity,
-    double minAngle,
-    double maxAngle,
-    double *flightTime)
-{
-    double distance;
-    double maxRange;
-    double value;
-    double lowerAngle;
-    double upperAngle;
-    double angle;
-
-    (void)minVelocity;
-
-    distance=calculateDistance(attacker, target);
-
-//maximum range inside the allowed angle range.
-    if(minAngle <= 45.0 && maxAngle >= 45.0)
-    {
-        angle=45.0;
-    }
-    else if(maxAngle < 45.0)
-    {
-        angle=maxAngle;
-    }
-    else
-    {
-        angle=minAngle;
-    }
-
-    maxRange=calculateRange(maxVelocity, angle);
-
-    if(distance > maxRange)
-    {
-        return 0;
-    }
-
-//calculate the two possible firing angles
-    value=(distance * GRAVITY) / (maxVelocity*maxVelocity);
-    if(value > 1.0)
-    {
-        return 0;
-    }
-    if(value < 0.0)
-    {
-        return 0;
-    }
-    lowerAngle=0.5*asin(value);
-    lowerAngle=lowerAngle * 180.0 / PI;
-
-    upperAngle=90.0 - lowerAngle;
-//use the lower angle if it is allowed,otherwise, use the upper angle
-    if(lowerAngle >= minAngle && lowerAngle <= maxAngle)
-    {
-        angle=lowerAngle;
-    }
-    else if(upperAngle >= minAngle && upperAngle <= maxAngle)
-    {
-        angle=upperAngle;
-    }
-    else
-    {
-        return 0;
-    }
-
-    *flightTime = calculateFlightTime(maxVelocity, angle);
-    return 1;
-}
-
-//convert EscortType to readable text
-static const char *getEscortTypeName(EscortType type)
-{
-    switch(type)
-    {
-        case EA:
-            return "EA";
-
-        case EB:
-            return "EB";
-
-        case EC:
-            return "EC";
-
-        case ED:
-            return "ED";
-
-        case EE:
-            return "EE";
-
-        default:
-            return "UNKNOWN";
-    }
-}
-
-//file handling
-
-static void saveInitialConditions(const Battlefield *field)
+/*
+ * Save initial battlefield conditions.
+ */
+static void saveInitialConditions(
+    const Battlefield *field)
 {
     FILE *file;
     int i;
-    file=fopen("part1A_initial.txt", "w");
 
-    if(file == NULL)
+
+    file = fopen(
+        "part1A_initial.txt",
+        "w"
+    );
+
+
+    if (file == NULL)
     {
-        printf("Error: Cannot create part1A_initial.txt\n");
+        printf(
+            "Error opening "
+            "part1A_initial.txt.\n"
+        );
+
         return;
     }
 
-    fprintf(file, "PART 1-A INITIAL CONDITIONS\n\n");
-    fprintf(file, "Battlefield size: %.2f\n\n", field->size);
-    fprintf(file, "BATTLESHIP\n");
-    fprintf(file, "Type: %c\n", field->battleship.notation);
-    fprintf(file, "Position: (%.2f, %.2f)\n", field->battleship.position.x, field->battleship.position.y);
 
-    fprintf(file, "Maximum velocity: %.2f\n\n", field->battleship.maxVelocity);
+    fprintf(
+        file,
+        "PART 1-A INITIAL CONDITIONS\n\n"
+    );
 
-    fprintf(file, "ESCORT SHIPS\n");
 
-    for(i = 0; i < field->escortCount; i++)
+    fprintf(
+        file,
+        "Battlefield size: %.2f\n\n",
+        field->size
+    );
+
+
+    /*
+     * Battleship.
+     */
+    fprintf(
+        file,
+        "BATTLESHIP\n"
+    );
+
+
+    fprintf(
+        file,
+        "Type: %c\n",
+        field->battleship.notation
+    );
+
+
+    fprintf(
+        file,
+        "Position: (%.2f, %.2f)\n",
+        field->battleship.position.x,
+        field->battleship.position.y
+    );
+
+
+    fprintf(
+        file,
+        "Maximum velocity: %.2f\n",
+        field->battleship.maxVelocity
+    );
+
+
+    fprintf(
+        file,
+        "Health: %.2f\n",
+        field->battleship.health
+    );
+
+
+    fprintf(
+        file,
+        "\nESCORT SHIPS\n\n"
+    );
+
+
+    /*
+     * Escorts.
+     */
+    for (i = 0;
+         i < field->escortCount;
+         i++)
     {
-        const EscortShip *e = &field->escorts[i];
+        fprintf(
+            file,
+            "Escort #%d\n",
+            field->escorts[i].id
+        );
 
-        fprintf(file, "\nEscort #%d\n", e->id);
-        fprintf(file, "Type: %s\n", getEscortTypeName(e->type));
-        fprintf(file, "Position: (%.2f, %.2f)\n", e->position.x, e->position.y);
-        fprintf(file, "Minimum velocity: %.2f\n", e->minVelocity);
-	fprintf(file, "Maximum velocity: %.2f\n", e->maxVelocity);
-	fprintf(file, "Minimum angle: %.2f\n", e->minAngle);
-	fprintf(file, "Maximum angle: %.2f\n", e->maxAngle);
+
+        fprintf(
+            file,
+            "Type: %s\n",
+            getEscortTypeName(
+                field->escorts[i].type
+            )
+        );
+
+
+        fprintf(
+            file,
+            "Position: (%.2f, %.2f)\n",
+            field->escorts[i].position.x,
+            field->escorts[i].position.y
+        );
+
+
+        fprintf(
+            file,
+            "Minimum velocity: %.2f\n",
+            field->escorts[i].minVelocity
+        );
+
+
+        fprintf(
+            file,
+            "Maximum velocity: %.2f\n",
+            field->escorts[i].maxVelocity
+        );
+
+
+        fprintf(
+            file,
+            "Minimum angle: %.2f\n",
+            field->escorts[i].minAngle
+        );
+
+
+        fprintf(
+            file,
+            "Maximum angle: %.2f\n",
+            field->escorts[i].maxAngle
+        );
+
+
+        fprintf(
+            file,
+            "Impact power: %.2f\n",
+            field->escorts[i].impactPower
+        );
+
+
+        fprintf(
+            file,
+            "Health: %.2f\n\n",
+            field->escorts[i].health
+        );
     }
+
+
     fclose(file);
 }
 
-static void saveFinalConditions(const Battlefield *field, int killerEscort,double killerTime)
+
+/*
+ * Save final battlefield conditions.
+ */
+static void saveFinalConditions(
+    const Battlefield *field,
+    int sunkByEscort,
+    double timeToHit)
 {
     FILE *file;
     int i;
 
-    file=fopen("part1A_final.txt", "w");
 
-    if(file == NULL)
+    file = fopen(
+        "part1A_final.txt",
+        "w"
+    );
+
+
+    if (file == NULL)
     {
-        printf("Error: Cannot create part1A_final.txt\n");
+        printf(
+            "Error opening "
+            "part1A_final.txt.\n"
+        );
+
         return;
     }
 
-    fprintf(file, "PART 1-A FINAL CONDITIONS\n\n");
-    fprintf(file, "Battlefield size: %.2f\n\n", field->size);
-    fprintf(file, "BATTLESHIP\n");
-    fprintf(file, "Type: %c\n", field->battleship.notation);
-    fprintf(file, "Position: (%.2f, %.2f)\n", field->battleship.position.x, field->battleship.position.y);
-    fprintf(file, "Health: %.2f\n", field->battleship.health);
-    fprintf(file, "Status: %s\n", field->battleship.status == ALIVE
+
+    fprintf(
+        file,
+        "PART 1-A FINAL CONDITIONS\n\n"
+    );
+
+
+    fprintf(
+        file,
+        "Battlefield size: %.2f\n\n",
+        field->size
+    );
+
+
+    /*
+     * Battleship information.
+     */
+    fprintf(
+        file,
+        "BATTLESHIP\n"
+    );
+
+
+    fprintf(
+        file,
+        "Type: %c\n",
+        field->battleship.notation
+    );
+
+
+    fprintf(
+        file,
+        "Position: (%.2f, %.2f)\n",
+        field->battleship.position.x,
+        field->battleship.position.y
+    );
+
+
+    fprintf(
+        file,
+        "Maximum velocity: %.2f\n",
+        field->battleship.maxVelocity
+    );
+
+
+    fprintf(
+        file,
+        "Health: %.2f\n",
+        field->battleship.health
+    );
+
+
+    fprintf(
+        file,
+        "Status: %s\n",
+        field->battleship.status == ALIVE
+            ? "ALIVE"
+            : "SUNK"
+    );
+
+
+    fprintf(
+        file,
+        "Shots fired: %d\n",
+        field->battleship.shotsFired
+    );
+
+
+    fprintf(
+        file,
+        "Last shot velocity: %.2f\n",
+        field->battleship.lastShotVelocity
+    );
+
+
+    fprintf(
+        file,
+        "Last shot angle: %.2f\n",
+        field->battleship.lastShotAngle
+    );
+
+
+    fprintf(
+        file,
+        "Last flight time: %.2f\n",
+        field->battleship.lastFlightTime
+    );
+
+
+    /*
+     * If an escort sank B.
+     */
+    if (sunkByEscort != -1)
+    {
+        fprintf(
+            file,
+            "Sunk by Escort: #%d\n",
+            sunkByEscort
+        );
+
+
+        fprintf(
+            file,
+            "Time to hit: %.2f seconds\n",
+            timeToHit
+        );
+    }
+
+
+    /*
+     * Escort information.
+     */
+    fprintf(
+        file,
+        "\nESCORT SHIPS\n\n"
+    );
+
+
+    for (i = 0;
+         i < field->escortCount;
+         i++)
+    {
+        fprintf(
+            file,
+            "Escort #%d\n",
+            field->escorts[i].id
+        );
+
+
+        fprintf(
+            file,
+            "Type: %s\n",
+            getEscortTypeName(
+                field->escorts[i].type
+            )
+        );
+
+
+        fprintf(
+            file,
+            "Position: (%.2f, %.2f)\n",
+            field->escorts[i].position.x,
+            field->escorts[i].position.y
+        );
+
+
+        fprintf(
+            file,
+            "Minimum velocity: %.2f\n",
+            field->escorts[i].minVelocity
+        );
+
+
+        fprintf(
+            file,
+            "Maximum velocity: %.2f\n",
+            field->escorts[i].maxVelocity
+        );
+
+
+        fprintf(
+            file,
+            "Minimum angle: %.2f\n",
+            field->escorts[i].minAngle
+        );
+
+
+        fprintf(
+            file,
+            "Maximum angle: %.2f\n",
+            field->escorts[i].maxAngle
+        );
+
+
+        fprintf(
+            file,
+            "Impact power: %.2f\n",
+            field->escorts[i].impactPower
+        );
+
+
+        fprintf(
+            file,
+            "Health: %.2f\n",
+            field->escorts[i].health
+        );
+
+
+        fprintf(
+            file,
+            "Status: %s\n",
+            field->escorts[i].status == ALIVE
                 ? "ALIVE"
-                : "SUNK");
+                : "SUNK"
+        );
 
-    fprintf(file, "Shots fired: %d\n", field->battleship.shotsFired);
 
-    if(killerEscort != -1)
-    {
-        fprintf(file, "Sunk by Escort: #%d\n", field->escorts[killerEscort].id);
-        fprintf(file, "Time to hit: %.2f seconds\n", killerTime);
+        fprintf(
+            file,
+            "Shots fired: %d\n",
+            field->escorts[i].shotsFired
+        );
+
+
+        fprintf(
+            file,
+            "Last shot velocity: %.2f\n",
+            field->escorts[i].lastShotVelocity
+        );
+
+
+        fprintf(
+            file,
+            "Last shot angle: %.2f\n",
+            field->escorts[i].lastShotAngle
+        );
+
+
+        fprintf(
+            file,
+            "Last flight time: %.2f\n\n",
+            field->escorts[i].lastFlightTime
+        );
     }
 
-    fprintf(file, "\nESCORT SHIPS\n");
-
-    for(i = 0; i < field->escortCount; i++)
-    {
-        const EscortShip *e = &field->escorts[i];
-        fprintf(file, "\nEscort #%d\n", e->id);
-        fprintf(file, "Type: %s\n", getEscortTypeName(e->type));
-	fprintf(file, "Position: (%.2f, %.2f)\n", e->position.x, e->position.y);
-        fprintf(file, "Minimum velocity: %.2f\n", e->minVelocity);
-        fprintf(file, "Maximum velocity: %.2f\n", e->maxVelocity);
-	fprintf(file, "Minimum angle: %.2f\n", e->minAngle);
-        fprintf(file, "Maximum angle: %.2f\n", e->maxAngle);
-        fprintf(file, "Health: %.2f\n", e->health);
-        fprintf(file, "Status: %s\n",
-                e->status == ALIVE
-                    ? "ALIVE"
-                    : "SUNK");
-
-        fprintf(file, "Shots fired: %d\n", e->shotsFired);
-    }
 
     fclose(file);
 }
 
+
+/*
+ * Save details of escorts destroyed
+ * by the battleship.
+ */
 static void saveHitEscorts(
     const Battlefield *field,
     int hitCount,
@@ -228,168 +437,476 @@ static void saveHitEscorts(
     FILE *file;
     int i;
 
-    file=fopen("part1A_hit_escorts.txt", "w");
 
-    if(file == NULL)
+    file = fopen(
+        "part1A_hit_escorts.txt",
+        "w"
+    );
+
+
+    if (file == NULL)
     {
-        printf("Error: Cannot create hit escorts file.\n");
+        printf(
+            "Error creating "
+            "part1A_hit_escorts.txt.\n"
+        );
+
         return;
     }
 
-    fprintf(file,
-            "PART 1-A ESCORTS HIT BY BATTLESHIP\n\n");
 
-    fprintf(file,
-            "Number of escorts hit: %d\n\n",
-            hitCount);
+    fprintf(
+        file,
+        "PART 1-A ESCORTS HIT BY BATTLESHIP\n\n"
+    );
 
-    for(i = 0; i < hitCount; i++)
+
+    fprintf(
+        file,
+        "Number of escorts hit: %d\n\n",
+        hitCount
+    );
+
+
+    for (i = 0;
+         i < hitCount;
+         i++)
     {
-        fprintf(file,
-                "Escort #%d\n",
-                hitIds[i]);
+        fprintf(
+            file,
+            "Escort #%d\n",
+            hitIds[i]
+        );
 
-        fprintf(file,
-                "Time to hit: %.2f seconds\n\n",
-                hitTimes[i]);
+
+        fprintf(
+            file,
+            "Time to hit: %.2f seconds\n\n",
+            hitTimes[i]
+        );
     }
+
+
     (void)field;
+
     fclose(file);
 }
 
-//Main Part 1-A simulation
 
+/*
+ * Run Part 1-A simulation.
+ */
 void runPart1A(Battlefield *field)
 {
     int i;
-    int hitCount = 0;
-    int hitIds[MAX_ESCORTS];
-    double hitTimes[MAX_ESCORTS];
-    int killerEscort = -1;
-    double killerTime = 0.0;
-    printf("\n----PART 1-A SIMULATION START----\n");
 
-    //save initial conditions
+    int hitCount = 0;
+
+    int hitIds[MAX_ESCORTS];
+
+    double hitTimes[MAX_ESCORTS];
+
+    int killerEscort = -1;
+
+    double killerTime = 1e100;
+
+
+    printf(
+        "\n----PART 1-A "
+        "SIMULATION START----\n"
+    );
+
+
+    /*
+     * Save the original setup before
+     * any shell is fired.
+     */
     saveInitialConditions(field);
 
-//sTEP 1:every Escort ship gets one firing opportunity//
-    for(i = 0; i < field->escortCount; i++)
+
+    /*
+     * ------------------------------------------------
+     * STEP 1
+     *
+     * Every Escort gets exactly one shot.
+     * ------------------------------------------------
+     */
+    for (i = 0;
+         i < field->escortCount;
+         i++)
     {
-        double flightTime;
-	if (field->escorts[i].status != ALIVE)
-        {
-            continue;
-        }
-        //One Escort ship can fire only once
-
-        field->escorts[i].shotsFired = 1;
-        if(canHit(
-                field->escorts[i].position,
-                field->battleship.position,
-                field->escorts[i].minVelocity,
-                field->escorts[i].maxVelocity,
-                field->escorts[i].minAngle,
-                field->escorts[i].maxAngle,
-                &flightTime))
-        {
-            
-// If several Escorts can hit the Battleship,the first shell to arrive sinks it
-             
-            if(killerEscort == -1 ||
-                flightTime < killerTime)
-            {
-                killerEscort = i;
-                killerTime = flightTime;
-            }
-        }
-    }
-//step 2:If an Escort can hit the Battleship, one shell is enough to destroy it
-    
-    if(killerEscort != -1)
-    {
-        field->battleship.health = 0.0;
-        field->battleship.status = SUNK;
-        printf("Escort #%d sank the Battleship.\n", field->escorts[killerEscort].id);
-
-        printf("Time to hit: %.2f seconds\n", killerTime);
-        saveFinalConditions(
-            field,
-            killerEscort,
-            killerTime);
-
-        printf("----PART 1-A SIMULATION END----\n");
-
-        return;
-    }
-//STEP 3:Battleship survived,it can hit ALL Escort ships inside
-     
-    for(i = 0; i < field->escortCount; i++)
-    {
+        double velocity;
+        double angle;
         double flightTime;
 
+
+        /*
+         * Ignore a sunk escort.
+         */
         if (field->escorts[i].status != ALIVE)
         {
             continue;
         }
 
-        if (canHit(
-                field->battleship.position,
+
+        /*
+         * Generate the actual shell velocity
+         * for this one shot.
+         *
+         * It is inside the E type's
+         * allowed velocity range.
+         */
+        velocity =
+            randomDouble(
+                field->escorts[i].minVelocity,
+                field->escorts[i].maxVelocity
+            );
+
+
+        /*
+         * Store the actual shell velocity.
+         */
+        field->escorts[i].lastShotVelocity =
+            velocity;
+
+
+        /*
+         * One E can fire only once
+         * in Part 1-A.
+         */
+        field->escorts[i].shotsFired = 1;
+
+
+        /*
+         * Check whether this actual shell
+         * can hit the battleship.
+         */
+        if (
+            canHit(
                 field->escorts[i].position,
-                0.0,
-                field->battleship.maxVelocity,
-                0.0,
-                90.0,
-                &flightTime))
+
+                field->battleship.position,
+
+                velocity,
+
+                field->escorts[i].minAngle,
+
+                field->escorts[i].maxAngle,
+
+                &angle,
+
+                &flightTime
+            )
+        )
         {
-            field->escorts[i].health = 0.0;
-            field->escorts[i].status =SUNK;
-            field->battleship.shotsFired++;
-            hitIds[hitCount] =field->escorts[i].id;
-            hitTimes[hitCount] = flightTime;
-            hitCount++;
+            /*
+             * Save firing information.
+             */
+            field->escorts[i].lastShotAngle =
+                angle;
+
+            field->escorts[i].lastFlightTime =
+                flightTime;
+
+
+            /*
+             * If several escorts can hit B,
+             * the shell arriving first wins.
+             */
+            if (
+                killerEscort == -1 ||
+                flightTime < killerTime
+            )
+            {
+                killerEscort = i;
+
+                killerTime = flightTime;
+            }
         }
     }
 
-//step 4: Display results when Battleship survives
-    
-    printf("Battleship survived.\n");
 
-    printf("Number of Escort ships hit by Battleship: %d\n",  hitCount);
+    /*
+     * ------------------------------------------------
+     * STEP 2
+     *
+     * If an Escort shell can hit B,
+     * one impact destroys B.
+     * ------------------------------------------------
+     */
+    if (killerEscort != -1)
+    {
+        field->battleship.health = 0.0;
 
-    if(hitCount > 0)
+        field->battleship.status = SUNK;
+
+
+        printf(
+            "Escort #%d sank "
+            "the Battleship.\n",
+
+            field->escorts[
+                killerEscort
+            ].id
+        );
+
+
+        printf(
+            "Shell velocity: %.2f m/s\n",
+
+            field->escorts[
+                killerEscort
+            ].lastShotVelocity
+        );
+
+
+        printf(
+            "Firing angle: %.2f degrees\n",
+
+            field->escorts[
+                killerEscort
+            ].lastShotAngle
+        );
+
+
+        printf(
+            "Time to hit: %.2f seconds\n",
+            killerTime
+        );
+
+
+        printf(
+            "----PART 1-A "
+            "SIMULATION END----\n"
+        );
+
+
+        saveFinalConditions(
+            field,
+
+            field->escorts[
+                killerEscort
+            ].id,
+
+            killerTime
+        );
+
+
+        return;
+    }
+
+
+    /*
+     * ------------------------------------------------
+     * STEP 3
+     *
+     * Battleship survived.
+     *
+     * B fires and can destroy all E ships
+     * that are inside its attack range.
+     * ------------------------------------------------
+     */
+    field->battleship.shotsFired = 0;
+
+
+    for (i = 0;
+         i < field->escortCount;
+         i++)
+    {
+        double velocity;
+        double angle;
+        double flightTime;
+
+
+        /*
+         * Ignore already sunk escorts.
+         */
+        if (field->escorts[i].status != ALIVE)
+        {
+            continue;
+        }
+
+
+        /*
+         * Generate actual shell velocity.
+         *
+         * B minimum velocity = 0.
+         */
+        velocity =
+            randomDouble(
+                0.0,
+                field->battleship.maxVelocity
+            );
+
+
+        /*
+         * Store actual velocity.
+         */
+        field->battleship.lastShotVelocity =
+            velocity;
+
+
+        /*
+         * B has one gun.
+         *
+         * In Part 1-A there is no reload time,
+         * so it can fire at all targets in range.
+         */
+        if (
+            canHit(
+                field->battleship.position,
+
+                field->escorts[i].position,
+
+                velocity,
+
+                0.0,
+
+                90.0,
+
+                &angle,
+
+                &flightTime
+            )
+        )
+        {
+            /*
+             * Store firing details.
+             */
+            field->battleship.lastShotAngle =
+                angle;
+
+            field->battleship.lastFlightTime =
+                flightTime;
+
+
+            /*
+             * Destroy the escort.
+             */
+            field->escorts[i].health = 0.0;
+
+            field->escorts[i].status = SUNK;
+
+
+            field->battleship.shotsFired++;
+
+
+            hitIds[hitCount] =
+                field->escorts[i].id;
+
+
+            hitTimes[hitCount] =
+                flightTime;
+
+
+            hitCount++;
+
+
+            printf(
+                "Battleship destroyed "
+                "Escort #%d.\n",
+
+                field->escorts[i].id
+            );
+
+
+            printf(
+                "  Shell velocity: %.2f m/s\n",
+                velocity
+            );
+
+
+            printf(
+                "  Firing angle: %.2f degrees\n",
+                angle
+            );
+
+
+            printf(
+                "  Time to hit: %.2f seconds\n",
+                flightTime
+            );
+        }
+    }
+
+
+    /*
+     * ------------------------------------------------
+     * STEP 4
+     *
+     * Display final result.
+     * ------------------------------------------------
+     */
+    printf(
+        "Battleship survived.\n"
+    );
+
+
+    printf(
+        "Number of Escort ships hit "
+        "by Battleship: %d\n",
+        hitCount
+    );
+
+
+    /*
+     * Calculate battle duration.
+     *
+     * Since B attacks all targets in
+     * Part 1-A without reload delay,
+     * the last impact time is the
+     * battle duration.
+     */
+    if (hitCount > 0)
     {
         double battleTime = 0.0;
-        for(i = 0; i < hitCount; i++)
+
+
+        for (i = 0;
+             i < hitCount;
+             i++)
         {
-            if(hitTimes[i] > battleTime)
+            if (hitTimes[i] > battleTime)
             {
-                battleTime = hitTimes[i];
+                battleTime =
+                    hitTimes[i];
             }
         }
 
-        printf("Battle duration: %.2f seconds\n",  battleTime);
+
+        printf(
+            "Battle duration: %.2f seconds\n",
+            battleTime
+        );
+
 
         saveHitEscorts(
             field,
             hitCount,
             hitIds,
-            hitTimes);
+            hitTimes
+        );
     }
     else
     {
-        printf("No Escort ships were hit.\n");
-
-        saveHitEscorts(
-            field,
-            0,
-            hitIds,
-            hitTimes);
+        printf(
+            "No Escort ships were hit.\n"
+        );
     }
 
+
+    printf(
+        "----PART 1-A "
+        "SIMULATION END----\n"
+    );
+
+
+    /*
+     * Save final battlefield.
+     */
     saveFinalConditions(
         field,
         -1,
-        0.0);
-
-    printf("----PART 1-A SIMULATION END----\n");
+        0.0
+    );
 }
