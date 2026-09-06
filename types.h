@@ -126,6 +126,18 @@ typedef struct
 
 } Battlefield;
 
+typedef struct
+{
+    int battleshipSunk;
+    int killerEscortId;
+    double killerTime;
+
+    int hitCount;
+    int hitIds[MAX_ESCORTS];
+    double hitTimes[MAX_ESCORTS];
+
+    double duration;
+} BattleResult;
 
 /* Stores Part 1-B simulation settings */
 typedef struct
