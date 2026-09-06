@@ -4,39 +4,22 @@
 
 #include "setup.h"
 #include "part1A.h"
-
+#include "part1B.h"
 
 int main(void)
 {
     Battlefield field;
+    Battlefield part1BField;
 
+    srand((unsigned int)time(NULL));
 
-    /*
-     * Create a different random sequence
-     * every time the program starts.
-     */
-    srand(
-        (unsigned int)time(NULL)
-    );
-
-
-    /*
-     * Create the battlefield.
-     */
     initializeBattlefield(&field);
-
-
-    /*
-     * Display initial battlefield.
-     */
     displayBattlefield(&field);
 
+    part1BField = field;
 
-    /*
-     * Run Part 1-A.
-     */
     runPart1A(&field);
-
+    runPart1B(&part1BField);
 
     return 0;
 }
