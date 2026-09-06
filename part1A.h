@@ -5,4 +5,10 @@
 
 void runPart1A(Battlefield *field);
 
+void runPart1ARound(
+    Battlefield *field,
+    double minimumBAngle,
+    double maximumBAngle,
+    BattleResult *result);
+
 #endif
