@@ -11,4 +11,10 @@ void runPart1ARound(
     double maximumBAngle,
     BattleResult *result);
 
+void runBattleshipAttack(
+    Battlefield *field,
+    double minimumBAngle,
+    double maximumBAngle,
+    BattleResult *result);
+
 #endif
