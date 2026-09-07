@@ -1,16 +1,13 @@
 #ifndef TYPES_H
 #define TYPES_H
 
-/* Maximum number of escort ships */
 #define MAX_ESCORTS 100
-
-/* Maximum number of path points */
 #define MAX_PATH_POINTS 100
 
 #define GRAVITY 9.81
 #define PI 3.141592653589793
 
-/* Different escort ship types */
+/* Escort ship types */
 typedef enum
 {
     EA,
@@ -20,7 +17,7 @@ typedef enum
     EE
 } EscortType;
 
-/* Different battleship types */
+/* Battleship types */
 typedef enum
 {
     U,
@@ -29,7 +26,7 @@ typedef enum
     S
 } BattleshipType;
 
-/* Current status of a ship */
+/* Ship status */
 typedef enum
 {
     ALIVE,
@@ -43,8 +40,7 @@ typedef struct
     double y;
 } Point;
 
-
-/* Stores battleship details */
+/* Battleship details */
 typedef struct
 {
     BattleshipType type;
@@ -53,29 +49,22 @@ typedef struct
     Point position;
 
     double maxVelocity;
-
     double health;
     double gamma;
 
     int shotsFired;
-
     ShipStatus status;
 
-    /*
-     * Details of the latest shell fired.
-     */
     double lastShotVelocity;
     double lastShotAngle;
     double lastFlightTime;
 
 } Battleship;
 
-
-/* Stores escort ship details */
+/* Escort ship details */
 typedef struct
 {
     int id;
-
     EscortType type;
 
     Point position;
@@ -88,32 +77,25 @@ typedef struct
 
     double impactPower;
     double gamma;
-
     double health;
 
     int shotsFired;
-
     ShipStatus status;
 
-    /*
-     * Details of the shell fired in Part 1-A.
-     */
     double lastShotVelocity;
     double lastShotAngle;
     double lastFlightTime;
 
 } EscortShip;
 
-
-/* Stores one path point */
+/* One path point */
 typedef struct
 {
     Point position;
 
 } PathPoint;
 
-
-/* Stores the whole battlefield */
+/* Complete battlefield */
 typedef struct
 {
     double size;
@@ -126,6 +108,7 @@ typedef struct
 
 } Battlefield;
 
+/* Result of one battle round */
 typedef struct
 {
     int battleshipSunk;
@@ -137,9 +120,13 @@ typedef struct
     double hitTimes[MAX_ESCORTS];
 
     double duration;
+
+    /* Used only in Part 1-C */
+    double cumulativeImpact;
+
 } BattleResult;
 
-/* Stores Part 1-B simulation settings */
+/* Part 1-B settings */
 typedef struct
 {
     unsigned int randomSeed;
