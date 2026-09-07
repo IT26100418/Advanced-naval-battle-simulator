@@ -25,7 +25,7 @@ static void generatePath(
 }
 
 
-/* Print generated path */
+/* Print B path */
 static void printPath(
     const Point path[],
     int numberOfPoints)
@@ -170,7 +170,9 @@ static void saveStep(
             result->duration);
     }
 
-    fprintf(file, "\nESCORT STATUS\n");
+    fprintf(
+        file,
+        "\nESCORT STATUS\n");
 
     for (i = 0;
          i < field->escortCount;
@@ -188,7 +190,7 @@ static void saveStep(
 }
 
 
-/* Save final Part 1-B summary */
+/* Save final summary */
 static void saveSummary(
     const Battlefield *field,
     double totalTime,
@@ -260,7 +262,7 @@ static void runSimulation(
     int jamIteration,
     double jamAngle,
     int useJam,
-    unsigned int seed,
+    unsigned int randomSeed,
     const char *name)
 {
     int i;
@@ -268,11 +270,19 @@ static void runSimulation(
     double totalTime = 0.0;
     BattleResult result;
 
+    /* Start with original battlefield */
     resetBattlefield(
         field,
         initial);
 
-    srand(seed);
+    /*
+     * Only Simulation 1 starts
+     * with the saved random seed.
+     */
+    if (!useJam)
+    {
+        srand(randomSeed);
+    }
 
     printf("\n");
     printf("========================================\n");
@@ -289,7 +299,7 @@ static void runSimulation(
         minimumAngle = 0.0;
 
         /*
-         * Jam starts after t.
+         * Gun jams after t iterations.
          */
         if (useJam &&
             i + 1 > jamIteration)
@@ -297,8 +307,9 @@ static void runSimulation(
             minimumAngle = jamAngle;
         }
 
+        printf("\n");
         printf(
-            "\n--- %s : Step %d ---\n",
+            "--- %s : Step %d ---\n",
             name,
             i + 1);
 
@@ -324,16 +335,13 @@ static void runSimulation(
             "B angle range: %.2f - 90.00 degrees\n",
             minimumAngle);
 
+        /* Run one Part 1-A style round */
         runPart1ARound(
             field,
             minimumAngle,
             90.0,
             &result);
 
-        /*
-         * Add this step time
-         * to total battle time.
-         */
         if (result.battleshipSunk)
         {
             totalTime +=
@@ -345,6 +353,7 @@ static void runSimulation(
                 result.duration;
         }
 
+        /* Save this step */
         saveStep(
             field,
             &result,
@@ -369,8 +378,9 @@ static void runSimulation(
             i + 1);
     }
 
+    printf("\n");
     printf(
-        "\n========== BATTLE SUMMARY ==========\n");
+        "========== BATTLE SUMMARY ==========\n");
 
     if (field->battleship.status == SUNK)
     {
@@ -386,9 +396,6 @@ static void runSimulation(
     printf(
         "Total Battle Time : %.2f seconds\n",
         totalTime);
-
-    printf(
-        "Total Impact      : NOT USED IN PART 1-B\n");
 
     {
         int destroyed = 0;
@@ -415,6 +422,7 @@ static void runSimulation(
     printf(
         "====================================\n");
 
+    /* Save final summary */
     saveSummary(
         field,
         totalTime,
@@ -437,6 +445,7 @@ void runPart1B(Battlefield *field)
 
     unsigned int randomSeed;
 
+    /* Keep original battlefield */
     initial = *field;
 
     printf("\n");
@@ -444,6 +453,7 @@ void runPart1B(Battlefield *field)
     printf("PART 1-B SETUP\n");
     printf("========================================\n");
 
+    /* Get number of path points */
     do
     {
         printf(
@@ -466,6 +476,8 @@ void runPart1B(Battlefield *field)
         numberOfPoints < 1 ||
         numberOfPoints > MAX_PATH_POINTS);
 
+
+    /* Get jam iteration */
     do
     {
         printf(
@@ -489,6 +501,8 @@ void runPart1B(Battlefield *field)
         jamIteration <= 0 ||
         jamIteration >= numberOfPoints);
 
+
+    /* Get jam minimum angle */
     do
     {
         printf(
@@ -512,8 +526,10 @@ void runPart1B(Battlefield *field)
         jamMinAngle <= 0.0 ||
         jamMinAngle >= 30.0);
 
+
     /*
-     * Create one path for both simulations.
+     * Generate one path.
+     * Both simulations use same path.
      */
     randomSeed =
         (unsigned int)rand();
@@ -529,9 +545,8 @@ void runPart1B(Battlefield *field)
         path,
         numberOfPoints);
 
-    /*
-     * Simulation 1.
-     */
+
+    /* Run Simulation 1 */
     runSimulation(
         &simulation,
         &initial,
@@ -543,8 +558,11 @@ void runPart1B(Battlefield *field)
         randomSeed,
         "SIMULATION1");
 
+
     /*
-     * Simulation 2.
+     * Run Simulation 2.
+     *
+     * The random seed is NOT reset here.
      */
     runSimulation(
         &simulation,
@@ -557,8 +575,12 @@ void runPart1B(Battlefield *field)
         randomSeed,
         "SIMULATION2");
 
+
     printf("\n");
-    printf("========================================\n");
-    printf("PART 1-B COMPLETED\n");
-    printf("========================================\n");
+    printf(
+        "========================================\n");
+    printf(
+        "PART 1-B COMPLETED\n");
+    printf(
+        "========================================\n");
 }
