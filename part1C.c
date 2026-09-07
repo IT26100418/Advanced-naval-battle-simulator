@@ -57,7 +57,7 @@ static void resetBattlefield(
 }
 
 
-/* Save one Part 1-C step */
+/* Save one simulation step */
 static void saveStep(
     const Battlefield *field,
     const BattleResult *result,
@@ -156,7 +156,9 @@ static void saveStep(
             result->duration);
     }
 
-    fprintf(file, "\nESCORT STATUS\n");
+    fprintf(
+        file,
+        "\nESCORT STATUS\n");
 
     for (i = 0;
          i < field->escortCount;
@@ -174,10 +176,83 @@ static void saveStep(
 }
 
 
+/* Save final summary */
+static void saveSummary(
+    const Battlefield *field,
+    const BattleResult *result,
+    double totalTime,
+    const char *simulation)
+{
+    char filename[100];
+    FILE *file;
+    int i;
+    int destroyed = 0;
+
+    sprintf(
+        filename,
+        "part1C_%s_summary.txt",
+        simulation);
+
+    file = fopen(filename, "w");
+
+    if (file == NULL)
+    {
+        printf(
+            "Error: Cannot create %s\n",
+            filename);
+        return;
+    }
+
+    for (i = 0;
+         i < field->escortCount;
+         i++)
+    {
+        if (field->escorts[i].status == SUNK)
+        {
+            destroyed++;
+        }
+    }
+
+    fprintf(
+        file,
+        "PART 1-C %s SUMMARY\n\n",
+        simulation);
+
+    fprintf(
+        file,
+        "Battleship Status: %s\n",
+        field->battleship.status == ALIVE
+            ? "SURVIVED" : "SUNK");
+
+    fprintf(
+        file,
+        "Total Battle Time: %.2f seconds\n",
+        totalTime);
+
+    fprintf(
+        file,
+        "Total Impact: %.2f%%\n",
+        result->cumulativeImpact * 100.0);
+
+    fprintf(
+        file,
+        "Escorts Destroyed: %d\n",
+        destroyed);
+
+    fprintf(
+        file,
+        "Escorts Remaining: %d\n",
+        field->escortCount - destroyed);
+
+    fclose(file);
+}
+
+
 /*
- * One Part 1-C battle round.
+ * Run one Part 1-C battle round.
  *
- * Impact continues from previous steps.
+ * E impact continues from
+ * previous path points.
  */
 static void runImpactRound(
     Battlefield *field,
@@ -187,6 +262,9 @@ static void runImpactRound(
 {
     int i;
 
+    int lastImpactEscortId = -1;
+    double lastImpactTime = 0.0;
+
     result->battleshipSunk = 0;
     result->killerEscortId = -1;
     result->killerTime = 0.0;
@@ -195,7 +273,7 @@ static void runImpactRound(
     result->duration = 0.0;
 
     /*
-     * Every alive E gets one chance.
+     * Each alive E gets one chance.
      */
     for (i = 0;
          i < field->escortCount;
@@ -241,6 +319,15 @@ static void runImpactRound(
             result->cumulativeImpact +=
                 field->escorts[i].impactPower;
 
+            /*
+             * Remember the latest E
+             * that contributed impact.
+             */
+            lastImpactEscortId =
+                field->escorts[i].id;
+
+            lastImpactTime = time;
+
             printf(
                 "Escort #%d hit Battleship.\n",
                 field->escorts[i].id);
@@ -253,7 +340,7 @@ static void runImpactRound(
     }
 
     /*
-     * Update B health.
+     * Calculate B health.
      */
     field->battleship.health =
         1.0 - result->cumulativeImpact;
@@ -273,26 +360,11 @@ static void runImpactRound(
 
         result->battleshipSunk = 1;
 
-        /*
-         * The last contributing E
-         * is stored for the result.
-         */
-        for (i = field->escortCount - 1;
-             i >= 0;
-             i--)
-        {
-            if (field->escorts[i].status == ALIVE &&
-                field->escorts[i].lastFlightTime > 0.0)
-            {
-                result->killerEscortId =
-                    field->escorts[i].id;
+        result->killerEscortId =
+            lastImpactEscortId;
 
-                result->killerTime =
-                    field->escorts[i].lastFlightTime;
-
-                break;
-            }
-        }
+        result->killerTime =
+            lastImpactTime;
 
         printf(
             "Battleship was destroyed by "
@@ -309,6 +381,204 @@ static void runImpactRound(
         minimumBAngle,
         maximumBAngle,
         result);
+}
+
+
+/* Run one complete simulation */
+static void runSimulation(
+    Battlefield *field,
+    const Battlefield *initial,
+    const Point path[],
+    int numberOfPoints,
+    int jamIteration,
+    double jamMinAngle,
+    int useJam,
+    unsigned int randomSeed,
+    const char *name)
+{
+    BattleResult result;
+    double totalTime = 0.0;
+    double cumulativeImpact = 0.0;
+
+    int i;
+
+    resetBattlefield(
+        field,
+        initial);
+
+    /*
+     * Start the first simulation
+     * with the same random seed.
+     */
+    if (!useJam)
+    {
+        srand(randomSeed);
+    }
+
+    printf("\n");
+    printf("========================================\n");
+    printf("PART 1-C - %s\n", name);
+    printf("========================================\n");
+
+    for (i = 0;
+         i < numberOfPoints;
+         i++)
+    {
+        double minimumAngle = 0.0;
+
+        field->battleship.position =
+            path[i];
+
+        /*
+         * Jam starts after t.
+         */
+        if (useJam &&
+            i + 1 > jamIteration)
+        {
+            minimumAngle = jamMinAngle;
+        }
+
+        /*
+         * Keep cumulative impact
+         * between path points.
+         */
+        result.cumulativeImpact =
+            cumulativeImpact;
+
+        printf("\n");
+        printf(
+            "--- %s : Step %d ---\n",
+            name,
+            i + 1);
+
+        printf(
+            "Battleship position: "
+            "(%.2f, %.2f)\n",
+            path[i].x,
+            path[i].y);
+
+        if (useJam &&
+            i + 1 > jamIteration)
+        {
+            printf(
+                "Gun status: JAMMED\n");
+        }
+        else
+        {
+            printf(
+                "Gun status: NORMAL\n");
+        }
+
+        printf(
+            "B angle range: %.2f - 90.00 degrees\n",
+            minimumAngle);
+
+        runImpactRound(
+            field,
+            minimumAngle,
+            90.0,
+            &result);
+
+        cumulativeImpact =
+            result.cumulativeImpact;
+
+        if (result.battleshipSunk)
+        {
+            totalTime +=
+                result.killerTime;
+        }
+        else
+        {
+            totalTime +=
+                result.duration;
+        }
+
+        printf(
+            "Cumulative impact: %.2f%%\n",
+            result.cumulativeImpact *
+            100.0);
+
+        printf(
+            "Battleship health: %.2f%%\n",
+            field->battleship.health *
+            100.0);
+
+        saveStep(
+            field,
+            &result,
+            path[i],
+            i + 1,
+            name,
+            minimumAngle);
+
+        if (result.battleshipSunk)
+        {
+            printf(
+                "Battleship destroyed "
+                "at step %d.\n",
+                i + 1);
+
+            break;
+        }
+    }
+
+    printf("\n");
+    printf(
+        "========== BATTLE SUMMARY ==========\n");
+
+    if (field->battleship.status == SUNK)
+    {
+        printf(
+            "Battleship Status : SUNK\n");
+    }
+    else
+    {
+        printf(
+            "Battleship Status : SURVIVED\n");
+    }
+
+    printf(
+        "Total Battle Time : %.2f seconds\n",
+        totalTime);
+
+    printf(
+        "Total Impact      : %.2f%%\n",
+        cumulativeImpact * 100.0);
+
+    {
+        int destroyed = 0;
+
+        for (i = 0;
+             i < field->escortCount;
+             i++)
+        {
+            if (field->escorts[i].status == SUNK)
+            {
+                destroyed++;
+            }
+        }
+
+        printf(
+            "Escorts Destroyed : %d\n",
+            destroyed);
+
+        printf(
+            "Escorts Remaining : %d\n",
+            field->escortCount -
+            destroyed);
+    }
+
+    printf(
+        "====================================\n");
+
+    result.cumulativeImpact =
+        cumulativeImpact;
+
+    saveSummary(
+        field,
+        &result,
+        totalTime,
+        name);
 }
 
 
@@ -334,6 +604,7 @@ void runPart1C(Battlefield *field)
     printf("PART 1-C SETUP\n");
     printf("========================================\n");
 
+    /* Get number of path points */
     do
     {
         printf(
@@ -356,6 +627,8 @@ void runPart1C(Battlefield *field)
         numberOfPoints < 1 ||
         numberOfPoints > MAX_PATH_POINTS);
 
+
+    /* Get jam iteration */
     do
     {
         printf(
@@ -379,6 +652,8 @@ void runPart1C(Battlefield *field)
         jamIteration <= 0 ||
         jamIteration >= numberOfPoints);
 
+
+    /* Get jam minimum angle */
     do
     {
         printf(
@@ -402,8 +677,10 @@ void runPart1C(Battlefield *field)
         jamMinAngle <= 0.0 ||
         jamMinAngle >= 30.0);
 
+
     /*
-     * Same path for both simulations.
+     * Generate one path.
+     * Both simulations use this path.
      */
     randomSeed =
         (unsigned int)rand();
@@ -434,298 +711,46 @@ void runPart1C(Battlefield *field)
         }
     }
 
+
     /*
-     * ----------------------------
-     * Simulation 1
-     * ----------------------------
+     * Simulation 1:
+     * B gun is normal.
      */
-
-    resetBattlefield(
+    runSimulation(
         &simulation,
-        &initial);
-
-    srand(randomSeed);
-
-    {
-        BattleResult result;
-        double totalTime = 0.0;
-        int i;
-
-        result.cumulativeImpact = 0.0;
-
-        printf("\n");
-        printf("========================================\n");
-        printf("PART 1-C - SIMULATION1\n");
-        printf("========================================\n");
-
-        for (i = 0;
-             i < numberOfPoints;
-             i++)
-        {
-            simulation.battleship.position =
-                path[i];
-
-            printf(
-                "\n--- SIMULATION1 : Step %d ---\n",
-                i + 1);
-
-            printf(
-                "Battleship position: "
-                "(%.2f, %.2f)\n",
-                path[i].x,
-                path[i].y);
-
-            runImpactRound(
-                &simulation,
-                0.0,
-                90.0,
-                &result);
-
-            if (result.battleshipSunk)
-            {
-                totalTime +=
-                    result.killerTime;
-            }
-            else
-            {
-                totalTime +=
-                    result.duration;
-            }
-
-            printf(
-                "Cumulative impact: %.2f%%\n",
-                result.cumulativeImpact *
-                100.0);
-
-            printf(
-                "Battleship health: %.2f%%\n",
-                simulation.battleship.health *
-                100.0);
-
-            saveStep(
-                &simulation,
-                &result,
-                path[i],
-                i + 1,
-                "SIMULATION1",
-                0.0);
-
-            if (result.battleshipSunk)
-            {
-                break;
-            }
-        }
-
-        printf(
-            "\n========== BATTLE SUMMARY ==========\n");
-
-        if (simulation.battleship.status == SUNK)
-        {
-            printf(
-                "Battleship Status : SUNK\n");
-        }
-        else
-        {
-            printf(
-                "Battleship Status : SURVIVED\n");
-        }
-
-        printf(
-            "Total Battle Time : %.2f seconds\n",
-            totalTime);
-
-        printf(
-            "Total Impact      : %.2f%%\n",
-            result.cumulativeImpact *
-            100.0);
-
-        {
-            int destroyed = 0;
-
-            for (i = 0;
-                 i < simulation.escortCount;
-                 i++)
-            {
-                if (simulation.escorts[i].status ==
-                    SUNK)
-                {
-                    destroyed++;
-                }
-            }
-
-            printf(
-                "Escorts Destroyed : %d\n",
-                destroyed);
-
-            printf(
-                "Escorts Remaining : %d\n",
-                simulation.escortCount -
-                destroyed);
-        }
-
-        printf(
-            "====================================\n");
-    }
+        &initial,
+        path,
+        numberOfPoints,
+        jamIteration,
+        jamMinAngle,
+        0,
+        randomSeed,
+        "SIMULATION1");
 
 
     /*
-     * ----------------------------
-     * Simulation 2
-     * ----------------------------
+     * Simulation 2:
+     * B gun becomes jammed after t.
+     *
+     * Do not reset the random seed here.
      */
-
-    resetBattlefield(
+    runSimulation(
         &simulation,
-        &initial);
+        &initial,
+        path,
+        numberOfPoints,
+        jamIteration,
+        jamMinAngle,
+        1,
+        randomSeed,
+        "SIMULATION2");
 
-    srand(randomSeed);
-
-    {
-        BattleResult result;
-        double totalTime = 0.0;
-        int i;
-
-        result.cumulativeImpact = 0.0;
-
-        printf("\n");
-        printf("========================================\n");
-        printf("PART 1-C - SIMULATION2\n");
-        printf("========================================\n");
-
-        for (i = 0;
-             i < numberOfPoints;
-             i++)
-        {
-            double minimumAngle = 0.0;
-
-            simulation.battleship.position =
-                path[i];
-
-            if (i + 1 > jamIteration)
-            {
-                minimumAngle =
-                    jamMinAngle;
-            }
-
-            printf(
-                "\n--- SIMULATION2 : Step %d ---\n",
-                i + 1);
-
-            printf(
-                "Battleship position: "
-                "(%.2f, %.2f)\n",
-                path[i].x,
-                path[i].y);
-
-            if (minimumAngle > 0.0)
-            {
-                printf(
-                    "Gun status: JAMMED\n");
-            }
-            else
-            {
-                printf(
-                    "Gun status: NORMAL\n");
-            }
-
-            printf(
-                "B angle range: %.2f - 90.00 degrees\n",
-                minimumAngle);
-
-            runImpactRound(
-                &simulation,
-                minimumAngle,
-                90.0,
-                &result);
-
-            if (result.battleshipSunk)
-            {
-                totalTime +=
-                    result.killerTime;
-            }
-            else
-            {
-                totalTime +=
-                    result.duration;
-            }
-
-            printf(
-                "Cumulative impact: %.2f%%\n",
-                result.cumulativeImpact *
-                100.0);
-
-            printf(
-                "Battleship health: %.2f%%\n",
-                simulation.battleship.health *
-                100.0);
-
-            saveStep(
-                &simulation,
-                &result,
-                path[i],
-                i + 1,
-                "SIMULATION2",
-                minimumAngle);
-
-            if (result.battleshipSunk)
-            {
-                break;
-            }
-        }
-
-        printf(
-            "\n========== BATTLE SUMMARY ==========\n");
-
-        if (simulation.battleship.status == SUNK)
-        {
-            printf(
-                "Battleship Status : SUNK\n");
-        }
-        else
-        {
-            printf(
-                "Battleship Status : SURVIVED\n");
-        }
-
-        printf(
-            "Total Battle Time : %.2f seconds\n",
-            totalTime);
-
-        printf(
-            "Total Impact      : %.2f%%\n",
-            result.cumulativeImpact *
-            100.0);
-
-        {
-            int destroyed = 0;
-
-            for (i = 0;
-                 i < simulation.escortCount;
-                 i++)
-            {
-                if (simulation.escorts[i].status ==
-                    SUNK)
-                {
-                    destroyed++;
-                }
-            }
-
-            printf(
-                "Escorts Destroyed : %d\n",
-                destroyed);
-
-            printf(
-                "Escorts Remaining : %d\n",
-                simulation.escortCount -
-                destroyed);
-        }
-
-        printf(
-            "====================================\n");
-    }
 
     printf("\n");
-    printf("========================================\n");
-    printf("PART 1-C COMPLETED\n");
-    printf("========================================\n");
+    printf(
+        "========================================\n");
+    printf(
+        "PART 1-C COMPLETED\n");
+    printf(
+        "========================================\n");
 }
