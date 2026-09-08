@@ -5,117 +5,146 @@
 #include "part1B.h"
 #include "part1C.h"
 #include "part2A.h"
+#include "part2B.h"
 
 
-/* Display the main menu */
+/* Display main menu */
 void displayMenu(void)
 {
     printf("\n");
-    printf("========================================\n");
-    printf("   ADVANCED NAVAL BATTLE SIMULATOR\n");
-    printf("========================================\n");
 
-    printf("1. Run Part 1-A only\n");
-    printf("2. Run Part 1-B only\n");
-    printf("3. Run Part 1-C only\n");
-    printf("4. Run Part 2-A only\n");
-    printf("5. Run Part 1-A + Part 1-B + Part 1-C + Part 2-A\n");
-    printf("6. Exit\n");
+    printf(
+        "========================================\n"
+    );
 
-    printf("========================================\n");
+    printf(
+        "   ADVANCED NAVAL BATTLE SIMULATOR\n"
+    );
+
+    printf(
+        "========================================\n"
+    );
+
+
+    printf(
+        "1. Run Part 1-A only\n"
+    );
+
+    printf(
+        "2. Run Part 1-B only\n"
+    );
+
+    printf(
+        "3. Run Part 1-C only\n"
+    );
+
+    printf(
+        "4. Run Part 2-A only\n"
+    );
+
+    printf(
+        "5. Run Part 2-B only\n"
+    );
+
+    printf(
+        "6. Run Part 1-A + Part 1-B + "
+        "Part 1-C + Part 2-A + Part 2-B\n"
+    );
+
+    printf(
+        "7. Exit\n"
+    );
+
+
+    printf(
+        "========================================\n"
+    );
 }
 
 
-/* Run the selected menu option */
+/* Run selected option */
 void runMenu(Battlefield *field)
 {
     int choice;
+
 
     while (1)
     {
         displayMenu();
 
-        printf("Enter your choice: ");
-        scanf("%d", &choice);
+
+        printf(
+            "Enter your choice: "
+        );
+
+        scanf(
+            "%d",
+            &choice
+        );
 
 
         if (choice == 1)
         {
-            /* Run Part 1-A only */
-            Battlefield part1AField;
+            Battlefield temp = *field;
 
-            part1AField = *field;
-
-            runPart1A(&part1AField);
+            runPart1A(&temp);
         }
 
 
         else if (choice == 2)
         {
-            /* Run Part 1-B only */
-            Battlefield part1BField;
+            Battlefield temp = *field;
 
-            part1BField = *field;
-
-            runPart1B(&part1BField);
+            runPart1B(&temp);
         }
 
 
         else if (choice == 3)
         {
-            /* Run Part 1-C only */
-            Battlefield part1CField;
+            Battlefield temp = *field;
 
-            part1CField = *field;
-
-            runPart1C(&part1CField);
+            runPart1C(&temp);
         }
 
 
         else if (choice == 4)
         {
-            /* Run Part 2-A only */
-            Battlefield part2AField;
+            Battlefield temp = *field;
 
-            part2AField = *field;
-
-            runPart2A(&part2AField);
+            runPart2A(&temp);
         }
 
 
         else if (choice == 5)
         {
-            Battlefield part1AField;
-            Battlefield part1BField;
-            Battlefield part1CField;
-            Battlefield part2AField;
+            Battlefield temp = *field;
 
-
-            /*
-             * Give every part
-             * the same initial battlefield.
-             */
-            part1AField = *field;
-            part1BField = *field;
-            part1CField = *field;
-            part2AField = *field;
-
-
-            /* Run all parts */
-            runPart1A(&part1AField);
-
-            runPart1B(&part1BField);
-
-            runPart1C(&part1CField);
-
-            runPart2A(&part2AField);
+            runPart2B(&temp);
         }
 
 
         else if (choice == 6)
         {
-            printf("\n");
-            printf("Program ended.\n");
+            Battlefield temp = *field;
+
+
+            runPart1A(&temp);
+
+            runPart1B(&temp);
+
+            runPart1C(&temp);
+
+            runPart2A(&temp);
+
+            runPart2B(&temp);
+        }
+
+
+        else if (choice == 7)
+        {
+            printf(
+                "\nProgram ended.\n"
+            );
 
             break;
         }
@@ -123,10 +152,10 @@ void runMenu(Battlefield *field)
 
         else
         {
-            printf("\n");
             printf(
-                "Invalid choice. "
-                "Please enter 1-6.\n");
+                "\nInvalid choice. "
+                "Enter 1-7.\n"
+            );
         }
     }
 }

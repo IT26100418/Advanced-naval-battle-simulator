@@ -7,7 +7,7 @@
 
 
 /*
- * Check whether battlefield size is valid.
+ * Check battlefield size.
  */
 static int isValidBattlefieldSize(double size)
 {
@@ -16,7 +16,7 @@ static int isValidBattlefieldSize(double size)
 
 
 /*
- * Check whether escort count is valid.
+ * Check escort count.
  */
 static int isValidEscortCount(int count)
 {
@@ -45,21 +45,12 @@ void initializeBattlefield(Battlefield *field)
         return;
     }
 
-
-    /*
-     * Get battlefield size.
-     */
     do
     {
         printf("Enter battlefield size: ");
+        scanf("%lf", &field->size);
 
-        scanf(
-            "%lf",
-            &field->size
-        );
-
-        if (!isValidBattlefieldSize(
-                field->size))
+        if (!isValidBattlefieldSize(field->size))
         {
             printf(
                 "Invalid battlefield size. "
@@ -67,18 +58,13 @@ void initializeBattlefield(Battlefield *field)
             );
         }
 
-    } while (!isValidBattlefieldSize(
-                 field->size));
+    } while (!isValidBattlefieldSize(field->size));
 
 
-    /*
-     * Get number of escort ships.
-     */
     do
     {
         printf(
-            "Enter number of escort ships "
-            "(1-%d): ",
+            "Enter number of escort ships (1-%d): ",
             MAX_ESCORTS
         );
 
@@ -99,18 +85,14 @@ void initializeBattlefield(Battlefield *field)
                  field->escortCount));
 
 
-    /*
-     * Setup battleship.
-     */
+    /* Setup battleship */
     setupBattleship(
         &field->battleship,
         field->size
     );
 
 
-    /*
-     * Setup escort ships.
-     */
+    /* Setup escort ships */
     setupEscortShips(
         field->escorts,
         field->escortCount,
@@ -135,9 +117,6 @@ void setupBattleship(
     char type;
 
 
-    /*
-     * Get battleship type.
-     */
     printf(
         "Enter battleship type (U/M/R/S): "
     );
@@ -148,9 +127,6 @@ void setupBattleship(
     );
 
 
-    /*
-     * Convert character to enum.
-     */
     switch (type)
     {
         case 'U':
@@ -195,17 +171,14 @@ void setupBattleship(
             battleship->notation = 'U';
 
             printf(
-                "Invalid type. "
-                "U is used.\n"
+                "Invalid type. U is used.\n"
             );
 
             break;
     }
 
 
-    /*
-     * Get battleship X position.
-     */
+    /* Battleship X position */
     do
     {
         printf(
@@ -235,9 +208,7 @@ void setupBattleship(
     );
 
 
-    /*
-     * Get battleship Y position.
-     */
+    /* Battleship Y position */
     do
     {
         printf(
@@ -268,24 +239,16 @@ void setupBattleship(
 
 
     /*
-     * Maximum shell velocity of B.
-     *
-     * This is a student-defined maximum,
-     * allowed by the assignment.
+     * Maximum B shell velocity.
      */
-    battleship->maxVelocity =
-        100.0;
+    battleship->maxVelocity = 100.0;
 
 
-    /*
-     * Part 1-A starts with full health.
-     */
+    /* Initial health */
     battleship->health = 1.0;
 
 
-    /*
-     * Gamma is used later in Part 2-C.
-     */
+    /* Gamma */
     battleship->gamma = 0.01;
 
 
@@ -294,9 +257,6 @@ void setupBattleship(
     battleship->status = ALIVE;
 
 
-    /*
-     * No shell has been fired yet.
-     */
     battleship->lastShotVelocity = 0.0;
     battleship->lastShotAngle = 0.0;
     battleship->lastFlightTime = 0.0;
@@ -318,21 +278,17 @@ void setupEscortShips(
 
     for (i = 0; i < count; i++)
     {
-        /*
-         * Unique ID.
-         */
+        /* Unique ID */
         escorts[i].id = i + 1;
 
 
-        /*
-         * Random escort type.
-         */
+        /* Random escort type */
         escorts[i].type =
             (EscortType)(rand() % 5);
 
 
         /*
-         * Generate a unique random position.
+         * Generate unique position.
          */
         do
         {
@@ -341,13 +297,8 @@ void setupEscortShips(
                     battlefieldSize
                 );
 
-
             j = 0;
 
-
-            /*
-             * Compare with previous escorts.
-             */
             while (
                 j < i &&
                 !isSamePoint(
@@ -369,10 +320,7 @@ void setupEscortShips(
         );
 
 
-        /*
-         * Set properties according
-         * to escort type.
-         */
+        /* Set type details */
         setupEscortDetails(
             &escorts[i]
         );
@@ -389,9 +337,6 @@ void setupEscortDetails(
     double upperVelocity;
 
 
-    /*
-     * Common values.
-     */
     escort->health = 1.0;
 
     escort->gamma = 0.02;
@@ -407,93 +352,86 @@ void setupEscortDetails(
 
 
     /*
-     * Each escort type has its own
-     * maximum angle and impact power.
-     *
-     * Minimum angle and velocities are
-     * randomly generated.
+     * Part 2-B:
+     * Each escort type has a
+     * different firing interval.
      */
     switch (escort->type)
-    {
-        case EA:
+{
+    case EA:
 
-            escort->maxAngle = 20.0;
+        escort->maxAngle = 20.0;
+        escort->impactPower = 0.08;
 
-            escort->impactPower = 0.08;
+        upperVelocity = 120.0;
 
-            /*
-             * EA can have maximum velocity
-             * up to 1.2 * B maximum velocity.
-             */
-            upperVelocity = 120.0;
+        escort->firingInterval = 8.0;
 
-            break;
+        break;
 
 
-        case EB:
+    case EB:
 
-            escort->maxAngle = 30.0;
+        escort->maxAngle = 30.0;
+        escort->impactPower = 0.06;
 
-            escort->impactPower = 0.06;
+        upperVelocity = 90.0;
 
-            /*
-             * Less than EA maximum.
-             */
-            upperVelocity = 90.0;
+        escort->firingInterval = 10.0;
 
-            break;
+        break;
 
 
-        case EC:
+    case EC:
 
-            escort->maxAngle = 25.0;
+        escort->maxAngle = 25.0;
+        escort->impactPower = 0.07;
 
-            escort->impactPower = 0.07;
+        upperVelocity = 90.0;
 
-            upperVelocity = 90.0;
+        escort->firingInterval = 12.0;
 
-            break;
-
-
-        case ED:
-
-            escort->maxAngle = 50.0;
-
-            escort->impactPower = 0.05;
-
-            upperVelocity = 90.0;
-
-            break;
+        break;
 
 
-        case EE:
+    case ED:
 
-            escort->maxAngle = 70.0;
+        escort->maxAngle = 50.0;
+        escort->impactPower = 0.05;
 
-            escort->impactPower = 0.04;
+        upperVelocity = 90.0;
 
-            upperVelocity = 90.0;
+        escort->firingInterval = 15.0;
 
-            break;
+        break;
 
 
-        default:
+    case EE:
 
-            escort->maxAngle = 20.0;
+        escort->maxAngle = 70.0;
+        escort->impactPower = 0.04;
 
-            escort->impactPower = 0.05;
+        upperVelocity = 90.0;
 
-            upperVelocity = 90.0;
+        escort->firingInterval = 18.0;
 
-            break;
-    }
+        break;
 
+
+    default:
+
+        escort->maxAngle = 20.0;
+        escort->impactPower = 0.05;
+
+        upperVelocity = 90.0;
+
+        escort->firingInterval = 10.0;
+
+        break;
+}
 
     /*
-     * Generate a random minimum angle.
-     *
-     * It is always between 0 and the
-     * maximum angle.
+     * Random minimum angle.
      */
     escort->minAngle =
         randomDouble(
@@ -503,9 +441,7 @@ void setupEscortDetails(
 
 
     /*
-     * Generate random minimum velocity.
-     *
-     * Minimum is kept below maximum.
+     * Random minimum velocity.
      */
     escort->minVelocity =
         randomDouble(
@@ -515,8 +451,7 @@ void setupEscortDetails(
 
 
     /*
-     * Generate maximum velocity above
-     * minimum velocity.
+     * Random maximum velocity.
      */
     escort->maxVelocity =
         randomDouble(
@@ -535,9 +470,7 @@ void displayBattlefield(
     int i;
 
 
-    printf(
-        "\nBATTLEFIELD\n"
-    );
+    printf("\nBATTLEFIELD\n");
 
 
     printf(
@@ -584,7 +517,6 @@ void displayBattlefield(
             field->escorts[i].id,
 
             field->escorts[i].position.x,
-
             field->escorts[i].position.y,
 
             getEscortTypeName(
@@ -595,19 +527,22 @@ void displayBattlefield(
 
         printf(
             "    Velocity: %.2f - %.2f\n",
-
             field->escorts[i].minVelocity,
-
             field->escorts[i].maxVelocity
         );
 
 
         printf(
             "    Angle: %.2f - %.2f\n",
-
             field->escorts[i].minAngle,
-
             field->escorts[i].maxAngle
+        );
+
+
+        printf(
+            "    Impact: %.2f | TE: %.2f sec\n",
+            field->escorts[i].impactPower,
+            field->escorts[i].firingInterval
         );
     }
 }

@@ -7,6 +7,7 @@
 #define GRAVITY 9.81
 #define PI 3.141592653589793
 
+
 /* Escort ship types */
 typedef enum
 {
@@ -17,6 +18,7 @@ typedef enum
     EE
 } EscortType;
 
+
 /* Battleship types */
 typedef enum
 {
@@ -26,6 +28,7 @@ typedef enum
     S
 } BattleshipType;
 
+
 /* Ship status */
 typedef enum
 {
@@ -33,12 +36,14 @@ typedef enum
     SUNK
 } ShipStatus;
 
+
 /* 2D position */
 typedef struct
 {
     double x;
     double y;
 } Point;
+
 
 /* Battleship details */
 typedef struct
@@ -61,6 +66,7 @@ typedef struct
 
 } Battleship;
 
+
 /* Escort ship details */
 typedef struct
 {
@@ -82,6 +88,9 @@ typedef struct
     int shotsFired;
     ShipStatus status;
 
+    /* Part 2-B */
+    double firingInterval;
+
     double lastShotVelocity;
     double lastShotAngle;
     double lastFlightTime;
@@ -94,6 +103,7 @@ typedef struct
     Point position;
 
 } PathPoint;
+
 
 /* Complete battlefield */
 typedef struct
@@ -108,6 +118,7 @@ typedef struct
 
 } Battlefield;
 
+
 /* Result of one battle round */
 typedef struct
 {
@@ -121,10 +132,11 @@ typedef struct
 
     double duration;
 
-    /* Used only in Part 1-C */
+    /* Used in Part 1-C */
     double cumulativeImpact;
 
 } BattleResult;
+
 
 /* Part 1-B settings */
 typedef struct
@@ -138,5 +150,6 @@ typedef struct
     double jamMinAngle;
 
 } SimulationSettings;
+
 
 #endif
