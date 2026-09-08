@@ -150,7 +150,6 @@ static int createAttackOrder(
     int order[])
 {
     Battlefield temp;
-    int i;
     int count = 0;
     int target;
 
@@ -867,6 +866,12 @@ static void runPart2BPath(
     srand(seed);
 
 
+    printf("\n========================================\n");
+    printf("PART 2-B -> PART 1-B - SIMULATION %d\n",
+           simulationNumber);
+    printf("========================================\n");
+
+
     for (i = 0; i < points; i++)
     {
         char name[100];
@@ -884,8 +889,16 @@ static void runPart2BPath(
         /*
          * After t, B gun is jammed.
          */
+        printf("\n--- Step %d ---\n", i + 1);
+        printf("B position: (%.2f, %.2f)\n",
+               path[i].x, path[i].y);
+
         if (i + 1 > jamIteration)
         {
+            printf("Gun status: JAMMED\n");
+            printf("B angle range: %.2f - 90.00 degrees\n",
+                   jamAngle);
+
             sprintf(
                 name,
                 "PART1B_SIM%d_STEP%d_JAM",
@@ -907,6 +920,9 @@ static void runPart2BPath(
         }
         else
         {
+            printf("Gun status: NORMAL\n");
+            printf("B angle range: 0.00 - 90.00 degrees\n");
+
             sprintf(
                 name,
                 "PART1B_SIM%d_STEP%d",
@@ -940,12 +956,47 @@ static void runPart2BPath(
                 : 0.0
         );
 
+        printAttackOrder(order, orderCount);
+
+        printf("Step battle time : %.2f seconds\n",
+               result.duration);
+
+        printf("Battleship Status : %s\n",
+               field.battleship.status == ALIVE
+                   ? "SURVIVED"
+                   : "SUNK");
 
         if (field.battleship.status == SUNK)
         {
+            printf("Battleship destroyed at step %d.\n",
+                   i + 1);
             break;
         }
     }
+
+    printf("\n========== PART 1-B SIMULATION %d SUMMARY =========="
+           "\n", simulationNumber);
+    printf("Battleship Status : %s\n",
+           field.battleship.status == ALIVE
+               ? "SURVIVED"
+               : "SUNK");
+
+    {
+        int destroyed = 0;
+        int j;
+
+        for (j = 0; j < field.escortCount; j++)
+        {
+            if (field.escorts[j].status == SUNK)
+                destroyed++;
+        }
+
+        printf("Escorts Destroyed : %d\n", destroyed);
+        printf("Escorts Remaining : %d\n",
+               field.escortCount - destroyed);
+    }
+
+    printf("========================================\n");
 }
 
 
@@ -984,6 +1035,12 @@ static void runPart2BCPath(
     srand(seed);
 
 
+    printf("\n========================================\n");
+    printf("PART 2-B -> PART 1-C - SIMULATION %d\n",
+           simulationNumber);
+    printf("========================================\n");
+
+
     for (i = 0; i < points; i++)
     {
         char name[100];
@@ -998,8 +1055,16 @@ static void runPart2BCPath(
         }
 
 
+        printf("\n--- Step %d ---\n", i + 1);
+        printf("B position: (%.2f, %.2f)\n",
+               path[i].x, path[i].y);
+
         if (i + 1 > jamIteration)
         {
+            printf("Gun status: JAMMED\n");
+            printf("B angle range: %.2f - 90.00 degrees\n",
+                   jamAngle);
+
             sprintf(
                 name,
                 "PART1C_SIM%d_STEP%d_JAM",
@@ -1021,6 +1086,9 @@ static void runPart2BCPath(
         }
         else
         {
+            printf("Gun status: NORMAL\n");
+            printf("B angle range: 0.00 - 90.00 degrees\n");
+
             sprintf(
                 name,
                 "PART1C_SIM%d_STEP%d",
@@ -1054,12 +1122,57 @@ static void runPart2BCPath(
                 : 0.0
         );
 
+        printAttackOrder(order, orderCount);
+
+        printf("Step battle time : %.2f seconds\n",
+               result.duration);
+
+        printf("Cumulative impact : %.2f%%\n",
+               cumulativeImpact * 100.0);
+
+        printf("Battleship Health : %.2f%%\n",
+               field.battleship.health * 100.0);
+
+        printf("Battleship Status : %s\n",
+               field.battleship.status == ALIVE
+                   ? "SURVIVED"
+                   : "SUNK");
 
         if (field.battleship.status == SUNK)
         {
+            printf("Battleship destroyed at step %d.\n",
+                   i + 1);
             break;
         }
     }
+
+    printf("\n========== PART 1-C SIMULATION %d SUMMARY =========="
+           "\n", simulationNumber);
+    printf("Battleship Status : %s\n",
+           field.battleship.status == ALIVE
+               ? "SURVIVED"
+               : "SUNK");
+    printf("Battleship Health : %.2f%%\n",
+           field.battleship.health * 100.0);
+    printf("Total Impact      : %.2f%%\n",
+           cumulativeImpact * 100.0);
+
+    {
+        int destroyed = 0;
+        int j;
+
+        for (j = 0; j < field.escortCount; j++)
+        {
+            if (field.escorts[j].status == SUNK)
+                destroyed++;
+        }
+
+        printf("Escorts Destroyed : %d\n", destroyed);
+        printf("Escorts Remaining : %d\n",
+               field.escortCount - destroyed);
+    }
+
+    printf("========================================\n");
 }
 
 
@@ -1295,20 +1408,10 @@ void runPart2B(
 
 
     /*
-     * Create another path for Part 1-C.
+     * Use the same path for Part 1-C.
+     * This keeps the comparison between
+     * Part 1-B and Part 1-C consistent.
      */
-    seed =
-        (unsigned int)rand();
-
-    srand(seed);
-
-
-    generatePath(
-        path,
-        points,
-        field->size
-    );
-
 
     /*
      * Part 2-B -> Part 1-C
