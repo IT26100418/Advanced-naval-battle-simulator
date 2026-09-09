@@ -1,89 +1,43 @@
 #include <stdlib.h>
 #include <math.h>
-
 #include "common.h"
 
-
-/*
- * Calculate the distance between two points.
- *
- * Formula:
- *
- * distance = sqrt(dx^2 + dy^2)
- */
+//calculate the distance between two points
 double calculateDistance(Point a, Point b)
 {
     double dx;
     double dy;
-
-    dx = b.x - a.x;
-    dy = b.y - a.y;
+    dx=b.x - a.x;
+    dy=b.y - a.y;
 
     return sqrt(dx * dx + dy * dy);
 }
 
-
-/*
- * Convert degrees to radians.
- */
+//convert degrees to radians
 double degreesToRadians(double degrees)
 {
     return degrees * PI / 180.0;
 }
 
-
-/*
- * Calculate projectile range.
- *
- * Formula:
- *
- * R = v^2 sin(2theta) / g
- */
+//calculate projectile range
 double calculateRange(double velocity, double angle)
 {
     double radians;
+    radians=degreesToRadians(angle);
 
-    radians = degreesToRadians(angle);
-
-    return (velocity * velocity *
-            sin(2.0 * radians)) / GRAVITY;
+    return (velocity * velocity * sin(2.0 * radians)) / GRAVITY;
 }
-
-
-/*
- * Calculate projectile flight time.
- *
- * Formula:
- *
- * T = 2v sin(theta) / g
- */
+//calculate projectile flight time
 double calculateFlightTime(double velocity, double angle)
 {
     double radians;
-
     radians = degreesToRadians(angle);
 
-    return (2.0 * velocity *
-            sin(radians)) / GRAVITY;
+    return (2.0 * velocity * sin(radians)) / GRAVITY;
 }
 
-
-/*
- * Check whether a shell can hit the target.
- *
- * Projectile range equation:
- *
- * R = v^2 sin(2theta) / g
- *
- * Therefore:
- *
- * sin(2theta) = Rg / v^2
- *
- * There can be two possible angles.
- *
- * The first valid angle inside the allowed
- * angle range is selected.
- */
+//check whether a shell can hit the target
+ 
 int canHit(
     Point attacker,
     Point target,
@@ -99,20 +53,14 @@ int canHit(
     double lowerAngle;
     double upperAngle;
 
-
-    /*
-     * A shell with zero or negative velocity
-     * cannot reach another point.
-     */
     if (velocity <= 0.0)
     {
         return 0;
     }
 
 
-    /*
-     * Check that the angle range is valid.
-     */
+    //check that the angle range is valid
+     
     if (minAngle < 0.0 ||
         maxAngle > 90.0 ||
         minAngle > maxAngle)
@@ -120,19 +68,14 @@ int canHit(
         return 0;
     }
 
-
-    /*
-     * Find the distance to the target.
-     */
-    distance = calculateDistance(
-        attacker,
-        target
-    );
+     //find the distance to the target
+    
+    distance = calculateDistance(attacker,target);
 
 
     /*
      * If attacker and target are at the
-     * same position, no firing is needed.
+     * same position, no firing is needed
      */
     if (distance <= 0.000001)
     {
@@ -142,12 +85,6 @@ int canHit(
         return 1;
     }
 
-
-    /*
-     * Calculate:
-     *
-     * value = Rg / v^2
-     */
     value =
         (distance * GRAVITY) /
         (velocity * velocity);
@@ -165,12 +102,6 @@ int canHit(
         return 0;
     }
 
-
-    /*
-     * Small floating point errors can
-     * sometimes make value slightly
-     * smaller than zero.
-     */
     if (value < 0.0)
     {
         return 0;
@@ -195,9 +126,9 @@ int canHit(
         90.0 - lowerAngle;
 
 
-    /*
-     * Check the lower angle first.
-     */
+    
+ //check the lower angle first
+     
     if (lowerAngle >= minAngle &&
         lowerAngle <= maxAngle)
     {
@@ -233,15 +164,13 @@ int canHit(
 
 
     /*
-     * Neither angle is allowed.
+     * Neither angle is allowed
      */
     return 0;
 }
 
+//convert EscortType into readable text
 
-/*
- * Convert EscortType into readable text.
- */
 const char *getEscortTypeName(EscortType type)
 {
     switch (type)
@@ -266,13 +195,7 @@ const char *getEscortTypeName(EscortType type)
     }
 }
 
-
-/*
- * Generate a random position inside
- * the battlefield.
- *
- * Both x and y are between 0 and D.
- */
+//generate a random position inside the battlefield
 Point generateRandomPosition(double battlefieldSize)
 {
     Point position;
@@ -286,11 +209,8 @@ Point generateRandomPosition(double battlefieldSize)
     return position;
 }
 
+//generate a random double between min and max
 
-/*
- * Generate a random double between
- * min and max.
- */
 double randomDouble(double min, double max)
 {
     double randomValue;
