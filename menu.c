@@ -1,5 +1,4 @@
 #include <stdio.h>
-
 #include "menu.h"
 #include "part1A.h"
 #include "part1B.h"
@@ -8,10 +7,7 @@
 #include "part2B.h"
 #include "part2C.h"
 
-
-/*
- * Display the instructions.
- */
+//display the instructions
 static void showInstructions(void)
 {
     printf("\n");
@@ -50,9 +46,8 @@ static void showInstructions(void)
 
     printf("\nPress ENTER to return to the main menu...");
 
-    /*
-     * Clear remaining input.
-     */
+    //clear remaining input
+    
     while (getchar() != '\n')
     {
         /* Clear input buffer */
@@ -61,10 +56,8 @@ static void showInstructions(void)
     getchar();
 }
 
+//display the Start Simulation submenu
 
-/*
- * Display the Start Simulation submenu.
- */
 static void displaySimulationMenu(void)
 {
     printf("\n");
@@ -84,11 +77,7 @@ static void displaySimulationMenu(void)
 
     printf("========================================\n");
 }
-
-
-/*
- * Run the selected simulation.
- */
+//run the selected simulation
 static void runSimulationMenu(Battlefield *field)
 {
     int choice;
@@ -166,10 +155,7 @@ static void runSimulationMenu(Battlefield *field)
     }
 }
 
-
-/*
- * Display the contents of a TXT file.
- */
+//display the contents of a TXT file
 static void displayTextFile(const char *filename)
 {
     FILE *file;
@@ -198,10 +184,7 @@ static void displayTextFile(const char *filename)
     printf("\n========================================\n");
 }
 
-
-/*
- * Display statistics from previous simulations.
- */
+//display statistics from previous simulations
 static void showSimulationStatistics(void)
 {
     int choice;
@@ -227,20 +210,14 @@ static void showSimulationStatistics(void)
 
         scanf("%d", &choice);
 
-
-        /*
-         * Part 1-A
-         */
+        //Part 1-A
         if (choice == 1)
         {
             displayTextFile("part1A_initial.txt");
             displayTextFile("part1A_final.txt");
         }
 
-
-        /*
-         * Part 1-B
-         */
+        //Part 1-B
         else if (choice == 2)
         {
             displayTextFile(
@@ -252,10 +229,8 @@ static void showSimulationStatistics(void)
             );
         }
 
-
-        /*
-         * Part 1-C
-         */
+        //part 1-C
+        
         else if (choice == 3)
         {
             displayTextFile(
@@ -267,10 +242,7 @@ static void showSimulationStatistics(void)
             );
         }
 
-
-        /*
-         * Part 2-A
-         */
+        //Part 2-A
         else if (choice == 4)
         {
             displayTextFile(
@@ -295,9 +267,7 @@ static void showSimulationStatistics(void)
         }
 
 
-        /*
-         * Part 2-B
-         */
+        //Part 2-B
         else if (choice == 5)
         {
             displayTextFile(
@@ -322,9 +292,7 @@ static void showSimulationStatistics(void)
         }
 
 
-        /*
-         * Part 2-C
-         */
+        //Part 2-C
         else if (choice == 6)
         {
             displayTextFile(
@@ -341,9 +309,7 @@ static void showSimulationStatistics(void)
         }
 
 
-        /*
-         * Show all available statistics.
-         */
+       //Show all available statistics
         else if (choice == 7)
         {
             printf("\n");
@@ -444,11 +410,7 @@ static void showSimulationStatistics(void)
                 "part2C_SIMULATION2_summary.txt"
             );
         }
-
-
-        /*
-         * Back to main menu.
-         */
+        //Back to main menu
         else if (choice == 8)
         {
             break;
@@ -462,10 +424,7 @@ static void showSimulationStatistics(void)
     }
 }
 
-
-/*
- * Display the main menu.
- */
+//Display the main menu
 void displayMenu(void)
 {
     printf("\n");
@@ -480,11 +439,7 @@ void displayMenu(void)
 
     printf("========================================\n");
 }
-
-
-/*
- * Run the main menu.
- */
+//Run the main menu
 void runMenu(Battlefield *field)
 {
     int choice;
@@ -497,36 +452,24 @@ void runMenu(Battlefield *field)
         scanf("%d", &choice);
 
 
-        /*
-         * Start Simulation
-         */
+        //Start Simulation
         if (choice == 1)
         {
             runSimulationMenu(field);
         }
 
-
-        /*
-         * View Instructions
-         */
+        //View Instructions
         else if (choice == 2)
         {
             showInstructions();
         }
 
-
-        /*
-         * Simulation Statistics
-         */
+        //Simulation Statistics
         else if (choice == 3)
         {
             showSimulationStatistics();
         }
-
-
-        /*
-         * Exit
-         */
+        //Exit
         else if (choice == 4)
         {
             printf("\nProgram ended.\n");
