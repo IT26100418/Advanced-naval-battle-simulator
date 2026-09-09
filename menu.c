@@ -6,6 +6,7 @@
 #include "part1C.h"
 #include "part2A.h"
 #include "part2B.h"
+#include "part2C.h"
 
 
 /* Display main menu */
@@ -24,7 +25,6 @@ void displayMenu(void)
     printf(
         "========================================\n"
     );
-
 
     printf(
         "1. Run Part 1-A only\n"
@@ -47,14 +47,18 @@ void displayMenu(void)
     );
 
     printf(
-        "6. Run Part 1-A + Part 1-B + "
-        "Part 1-C + Part 2-A + Part 2-B\n"
+        "6. Run Part 2-C only\n"
     );
 
     printf(
-        "7. Exit\n"
+        "7. Run Part 1-A + Part 1-B + "
+        "Part 1-C + Part 2-A + "
+        "Part 2-B + Part 2-C\n"
     );
 
+    printf(
+        "8. Exit\n"
+    );
 
     printf(
         "========================================\n"
@@ -87,7 +91,9 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-            runPart1A(&temp);
+            runPart1A(
+                &temp
+            );
         }
 
 
@@ -95,7 +101,9 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-            runPart1B(&temp);
+            runPart1B(
+                &temp
+            );
         }
 
 
@@ -103,7 +111,9 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-            runPart1C(&temp);
+            runPart1C(
+                &temp
+            );
         }
 
 
@@ -111,7 +121,9 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-            runPart2A(&temp);
+            runPart2A(
+                &temp
+            );
         }
 
 
@@ -119,7 +131,9 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-            runPart2B(&temp);
+            runPart2B(
+                &temp
+            );
         }
 
 
@@ -127,20 +141,44 @@ void runMenu(Battlefield *field)
         {
             Battlefield temp = *field;
 
-
-            runPart1A(&temp);
-
-            runPart1B(&temp);
-
-            runPart1C(&temp);
-
-            runPart2A(&temp);
-
-            runPart2B(&temp);
+            runPart2C(
+                &temp
+            );
         }
 
 
         else if (choice == 7)
+        {
+            Battlefield temp = *field;
+
+
+            runPart1A(
+                &temp
+            );
+
+            runPart1B(
+                &temp
+            );
+
+            runPart1C(
+                &temp
+            );
+
+            runPart2A(
+                &temp
+            );
+
+            runPart2B(
+                &temp
+            );
+
+            runPart2C(
+                &temp
+            );
+        }
+
+
+        else if (choice == 8)
         {
             printf(
                 "\nProgram ended.\n"
@@ -154,7 +192,7 @@ void runMenu(Battlefield *field)
         {
             printf(
                 "\nInvalid choice. "
-                "Enter 1-7.\n"
+                "Enter 1-8.\n"
             );
         }
     }
