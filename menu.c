@@ -385,6 +385,51 @@ static void showSimulationStatistics(void)
             );
 
 
+            printf("\n--- PART 2-A ---\n");
+
+            displayTextFile(
+                "part2A_PART1A_summary.txt"
+            );
+
+            displayTextFile(
+                "part2A_PART1B_SIMULATION1_summary.txt"
+            );
+
+            displayTextFile(
+                "part2A_PART1B_SIMULATION2_summary.txt"
+            );
+
+            displayTextFile(
+                "part2A_PART1C_SIMULATION1_summary.txt"
+            );
+
+            displayTextFile(
+                "part2A_PART1C_SIMULATION2_summary.txt"
+            );
+
+
+            printf("\n--- PART 2-B ---\n");
+
+            displayTextFile(
+                "part2B_PART1A.txt"
+            );
+
+            displayTextFile(
+                "part2B_PART1B_SIMULATION1_summary.txt"
+            );
+
+            displayTextFile(
+                "part2B_PART1B_SIMULATION2_summary.txt"
+            );
+
+            displayTextFile(
+                "part2B_PART1C_SIMULATION1_summary.txt"
+            );
+
+            displayTextFile(
+                "part2B_PART1C_SIMULATION2_summary.txt"
+            );
+
             printf("\n--- PART 2-C ---\n");
 
             displayTextFile(
@@ -494,6 +539,4 @@ void runMenu(Battlefield *field)
             printf("\nInvalid choice. Enter 1-4.\n");
         }
     }
-}
-
-
+}         
