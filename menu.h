@@ -6,7 +6,9 @@
 /* Display the main menu */
 void displayMenu(void);
 
-/* Run the selected menu option */
+/* Run the main menu */
 void runMenu(Battlefield *field);
 
 #endif
+
+
