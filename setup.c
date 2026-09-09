@@ -1,43 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-
 #include "setup.h"
 #include "common.h"
 
-
-/*
- * Check battlefield size.
- */
+//check battlefield size
 static int isValidBattlefieldSize(double size)
 {
     return size > 0.0;
 }
 
-
-/*
- * Check escort count.
- */
+//check escort count
 static int isValidEscortCount(int count)
 {
     return count > 0 &&
            count <= MAX_ESCORTS;
 }
 
-
-/*
- * Check whether two points are the same.
- */
+//check whether two points are the same.
 static int isSamePoint(Point a, Point b)
 {
     return fabs(a.x - b.x) < 0.000001 &&
            fabs(a.y - b.y) < 0.000001;
 }
 
-
-/*
- * Create the battlefield.
- */
+//create the battlefield
 void initializeBattlefield(Battlefield *field)
 {
     if (field == NULL)
@@ -85,14 +72,14 @@ void initializeBattlefield(Battlefield *field)
                  field->escortCount));
 
 
-    /* Setup battleship */
+    //setup battleship
     setupBattleship(
         &field->battleship,
         field->size
     );
 
 
-    /* Setup escort ships */
+    //setup escort ships
     setupEscortShips(
         field->escorts,
         field->escortCount,
@@ -106,10 +93,8 @@ void initializeBattlefield(Battlefield *field)
     );
 }
 
+//set battleship details
 
-/*
- * Set battleship details.
- */
 void setupBattleship(
     Battleship *battleship,
     double battlefieldSize)
@@ -178,7 +163,7 @@ void setupBattleship(
     }
 
 
-    /* Battleship X position */
+    //battleship X position
     do
     {
         printf(
@@ -208,7 +193,7 @@ void setupBattleship(
     );
 
 
-    /* Battleship Y position */
+    //battleship Y position
     do
     {
         printf(
@@ -238,34 +223,21 @@ void setupBattleship(
     );
 
 
-    /*
-     * Maximum B shell velocity.
-     */
+    // Maximum B shell velocity
     battleship->maxVelocity = 100.0;
 
-
-    /* Initial health */
+    //Initial health 
     battleship->health = 1.0;
-
-
-    /* Gamma */
+    //gamma
     battleship->gamma = 0.01;
-
-
     battleship->shotsFired = 0;
-
     battleship->status = ALIVE;
-
-
     battleship->lastShotVelocity = 0.0;
     battleship->lastShotAngle = 0.0;
     battleship->lastFlightTime = 0.0;
 }
 
-
-/*
- * Create escort ships.
- */
+//create escort ships
 void setupEscortShips(
     EscortShip escorts[],
     int count,
@@ -278,18 +250,15 @@ void setupEscortShips(
 
     for (i = 0; i < count; i++)
     {
-        /* Unique ID */
+        //unique ID 
         escorts[i].id = i + 1;
-
-
-        /* Random escort type */
+        //random escort type
         escorts[i].type =
             (EscortType)(rand() % 5);
 
 
-        /*
-         * Generate unique position.
-         */
+        //generate unique position
+   
         do
         {
             escorts[i].position =
@@ -320,7 +289,7 @@ void setupEscortShips(
         );
 
 
-        /* Set type details */
+        //set type details
         setupEscortDetails(
             &escorts[i]
         );
@@ -328,45 +297,29 @@ void setupEscortShips(
 }
 
 
-/*
- * Set escort properties.
- */
+//set escort properties
 void setupEscortDetails(
     EscortShip *escort)
 {
     double upperVelocity;
-
-
     escort->health = 1.0;
-
     escort->gamma = 0.02;
-
     escort->shotsFired = 0;
-
     escort->status = ALIVE;
-
-
     escort->lastShotVelocity = 0.0;
     escort->lastShotAngle = 0.0;
     escort->lastFlightTime = 0.0;
 
 
-    /*
-     * Part 2-B:
-     * Each escort type has a
-     * different firing interval.
-     */
+   //Part 2-B different firing interal
     switch (escort->type)
 {
     case EA:
 
         escort->maxAngle = 20.0;
         escort->impactPower = 0.08;
-
-        upperVelocity = 120.0;
-
+	upperVelocity = 120.0;
         escort->firingInterval = 8.0;
-
         break;
 
 
@@ -374,11 +327,8 @@ void setupEscortDetails(
 
         escort->maxAngle = 30.0;
         escort->impactPower = 0.06;
-
-        upperVelocity = 90.0;
-
+	upperVelocity = 90.0;
         escort->firingInterval = 10.0;
-
         break;
 
 
@@ -386,11 +336,8 @@ void setupEscortDetails(
 
         escort->maxAngle = 25.0;
         escort->impactPower = 0.07;
-
         upperVelocity = 90.0;
-
         escort->firingInterval = 12.0;
-
         break;
 
 
@@ -398,41 +345,31 @@ void setupEscortDetails(
 
         escort->maxAngle = 50.0;
         escort->impactPower = 0.05;
-
         upperVelocity = 90.0;
-
         escort->firingInterval = 15.0;
-
-        break;
+       break;
 
 
     case EE:
 
         escort->maxAngle = 70.0;
         escort->impactPower = 0.04;
-
         upperVelocity = 90.0;
-
         escort->firingInterval = 18.0;
-
-        break;
+       break;
 
 
     default:
 
         escort->maxAngle = 20.0;
         escort->impactPower = 0.05;
-
-        upperVelocity = 90.0;
-
+       	upperVelocity = 90.0;
         escort->firingInterval = 10.0;
-
-        break;
+       break;
 }
 
-    /*
-     * Random minimum angle.
-     */
+    //random minimum angle
+    
     escort->minAngle =
         randomDouble(
             0.0,
@@ -440,19 +377,15 @@ void setupEscortDetails(
         );
 
 
-    /*
-     * Random minimum velocity.
-     */
+    //random minimum velocity
+    
     escort->minVelocity =
         randomDouble(
             10.0,
             30.0
         );
 
-
-    /*
-     * Random maximum velocity.
-     */
+    //random maximum velocity
     escort->maxVelocity =
         randomDouble(
             escort->minVelocity + 10.0,
@@ -460,10 +393,7 @@ void setupEscortDetails(
         );
 }
 
-
-/*
- * Display battlefield details.
- */
+//display battlefield details
 void displayBattlefield(
     const Battlefield *field)
 {
