@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "part2B.h"
 #include "common.h"
@@ -268,6 +269,82 @@ static void saveAttackOrder(
  * impactMode = 1
  *     Part 1-C
  */
+static int isEscortAbleToHitBattleship(
+    const Battlefield *field,
+    int index)
+{
+    double angle;
+    double flightTime;
+    double velocity;
+
+    velocity = field->escorts[index].maxVelocity;
+
+    return canHit(
+        field->escorts[index].position,
+        field->battleship.position,
+        velocity,
+        field->escorts[index].minAngle,
+        field->escorts[index].maxAngle,
+        &angle,
+        &flightTime
+    );
+}
+
+
+/*
+ * Find the next escort firing time.
+ *
+ * Each escort has its own TE value, so the
+ * simulation jumps directly to the next event
+ * instead of increasing time one second at a time.
+ */
+static double findNextEscortTime(
+    const Battlefield *field,
+    const double nextEShot[])
+{
+    double nextTime = 1.0e30;
+    int i;
+
+    for (i = 0; i < field->escortCount; i++)
+    {
+        if (field->escorts[i].status != ALIVE)
+        {
+            continue;
+        }
+
+        if (!isEscortAbleToHitBattleship(field, i))
+        {
+            continue;
+        }
+
+        if (nextEShot[i] < nextTime)
+        {
+            nextTime = nextEShot[i];
+        }
+    }
+
+    return nextTime;
+}
+
+
+/*
+ * One Part 2-B round.
+ *
+ * E ships can fire repeatedly.
+ * B fires every TB seconds.
+ *
+ * The clock is event based. It moves directly
+ * to the next B or E firing event, so values
+ * such as TB = 2.5 seconds are handled correctly.
+ *
+ * impactMode = 0
+ *     Part 1-A / Part 1-B rules:
+ *     one successful E hit sinks B.
+ *
+ * impactMode = 1
+ *     Part 1-C rules:
+ *     E damage is cumulative.
+ */
 static void runRound(
     Battlefield *field,
     double minAngle,
@@ -281,222 +358,230 @@ static void runRound(
 {
     double currentTime = 0.0;
     double nextBShot = 0.0;
-
+    double nextEShot[MAX_ESCORTS];
+    double lastImpactTime = 0.0;
     int i;
 
     result->battleshipSunk = 0;
     result->killerEscortId = -1;
     result->killerTime = 0.0;
-
     result->hitCount = 0;
     result->duration = 0.0;
-
-    result->cumulativeImpact =
-        *cumulativeImpact;
-
+    result->cumulativeImpact = *cumulativeImpact;
 
     /*
-     * Create the strategic attack order
-     * before the battle starts.
+     * Create the initial strategic order.
+     * The order is also recreated whenever
+     * the B gun gets another firing opportunity.
      */
-    *orderCount =
-        createAttackOrder(
+    *orderCount = createAttackOrder(
+        field,
+        minAngle,
+        maxAngle,
+        order
+    );
+
+    for (i = 0; i < field->escortCount; i++)
+    {
+        /*
+         * Every E is ready to fire at time zero.
+         */
+        nextEShot[i] = 0.0;
+    }
+
+    /*
+     * Protect the simulation from invalid intervals.
+     */
+    if (firingInterval <= 0.0)
+    {
+        return;
+    }
+
+    while (field->battleship.status == ALIVE)
+    {
+        double nextETime;
+        double nextEventTime;
+        int bEvent;
+        int eEvent;
+
+        nextETime = findNextEscortTime(
             field,
-            minAngle,
-            maxAngle,
-            order
+            nextEShot
         );
 
-
-    /*
-     * Continue while B is alive.
-     *
-     * The limit prevents an infinite loop
-     * when neither side can attack.
-     */
-    while (
-        field->battleship.status == ALIVE &&
-        currentTime <= 10000.0)
-    {
-        int target;
-
-
         /*
-         * E ships fire continuously.
+         * If neither B nor any E can create
+         * another event, the round is finished.
          */
-        for (i = 0;
-             i < field->escortCount;
-             i++)
+        if (nextBShot >= 1.0e29 &&
+            nextETime >= 1.0e29)
         {
-            EscortShip *e =
-                &field->escorts[i];
-
-            double velocity;
-            double angle;
-            double flightTime;
-
-
-            if (e->status != ALIVE)
-            {
-                continue;
-            }
-
-
-            /*
-             * Fire at time 0, TE, 2TE...
-             */
-            if (currentTime > 0.0)
-            {
-                double remainder;
-
-                remainder =
-                    currentTime /
-                    e->firingInterval;
-
-                if (
-                    remainder -
-                    (int)remainder >
-                    0.000001)
-                {
-                    continue;
-                }
-            }
-
-
-            velocity =
-                randomDouble(
-                    e->minVelocity,
-                    e->maxVelocity
-                );
-
-
-            e->shotsFired++;
-
-
-            if (canHit(
-                    e->position,
-                    field->battleship.position,
-                    velocity,
-                    e->minAngle,
-                    e->maxAngle,
-                    &angle,
-                    &flightTime))
-            {
-                e->lastShotVelocity =
-                    velocity;
-
-                e->lastShotAngle =
-                    angle;
-
-                e->lastFlightTime =
-                    flightTime;
-
-
-                /*
-                 * Part 1-A / Part 1-B:
-                 * one successful hit destroys B.
-                 */
-                if (!impactMode)
-                {
-                    field->battleship.health =
-                        0.0;
-
-                    field->battleship.status =
-                        SUNK;
-
-                    result->battleshipSunk =
-                        1;
-
-                    result->killerEscortId =
-                        e->id;
-
-                    result->killerTime =
-                        currentTime +
-                        flightTime;
-
-                    result->duration =
-                        result->killerTime;
-
-                    printf(
-                        "Escort #%d sank B.\n",
-                        e->id
-                    );
-
-                    return;
-                }
-
-
-                /*
-                 * Part 1-C:
-                 * Add cumulative damage.
-                 */
-                *cumulativeImpact +=
-                    e->impactPower;
-
-                field->battleship.health =
-                    1.0 -
-                    *cumulativeImpact;
-
-                if (field->battleship.health < 0.0)
-                {
-                    field->battleship.health =
-                        0.0;
-                }
-
-
-                if (*cumulativeImpact >= 1.0)
-                {
-                    field->battleship.status =
-                        SUNK;
-
-                    result->battleshipSunk =
-                        1;
-
-                    result->killerEscortId =
-                        e->id;
-
-                    result->killerTime =
-                        currentTime +
-                        flightTime;
-
-                    result->duration =
-                        result->killerTime;
-
-                    return;
-                }
-            }
+            break;
         }
 
+        nextEventTime = nextBShot;
+
+        if (nextETime < nextEventTime)
+        {
+            nextEventTime = nextETime;
+        }
+
+        currentTime = nextEventTime;
+
+        bEvent =
+            fabs(currentTime - nextBShot) < 0.000001;
+
+        eEvent =
+            fabs(currentTime - nextETime) < 0.000001;
 
         /*
-         * B fires every TB seconds.
+         * Process all E ships scheduled at this
+         * exact time. Their firing intervals are
+         * independent of the other escorts.
          */
-        if (currentTime >= nextBShot)
+        if (eEvent)
         {
-            target =
-                selectTarget(
-                    field,
-                    minAngle,
-                    maxAngle
-                );
-
-
-            if (target != -1)
+            for (i = 0; i < field->escortCount; i++)
             {
+                EscortShip *e = &field->escorts[i];
                 double velocity;
                 double angle;
                 double flightTime;
 
+                if (e->status != ALIVE)
+                {
+                    continue;
+                }
 
-                velocity =
-                    randomDouble(
-                        0.0,
-                        field->battleship.maxVelocity
+                if (!isEscortAbleToHitBattleship(field, i))
+                {
+                    continue;
+                }
+
+                if (fabs(nextEShot[i] - currentTime) > 0.000001)
+                {
+                    continue;
+                }
+
+                velocity = randomDouble(
+                    e->minVelocity,
+                    e->maxVelocity
+                );
+
+                e->shotsFired++;
+
+                if (canHit(
+                        e->position,
+                        field->battleship.position,
+                        velocity,
+                        e->minAngle,
+                        e->maxAngle,
+                        &angle,
+                        &flightTime))
+                {
+                    double impactTime =
+                        currentTime + flightTime;
+
+                    e->lastShotVelocity = velocity;
+                    e->lastShotAngle = angle;
+                    e->lastFlightTime = flightTime;
+
+                    if (impactTime > lastImpactTime)
+                    {
+                        lastImpactTime = impactTime;
+                    }
+
+                    if (!impactMode)
+                    {
+                        /*
+                         * Part 1-A / 1-B: one successful
+                         * E attack is enough to destroy B.
+                         */
+                        field->battleship.health = 0.0;
+                        field->battleship.status = SUNK;
+
+                        result->battleshipSunk = 1;
+                        result->killerEscortId = e->id;
+                        result->killerTime = impactTime;
+                        result->duration = impactTime;
+
+                        printf(
+                            "Escort #%d hit B at %.2f seconds.\n",
+                            e->id,
+                            impactTime
+                        );
+
+                        return;
+                    }
+
+                    /*
+                     * Part 1-C: add this E's impact power.
+                     */
+                    *cumulativeImpact += e->impactPower;
+
+                    if (*cumulativeImpact > 1.0)
+                    {
+                        *cumulativeImpact = 1.0;
+                    }
+
+                    field->battleship.health =
+                        1.0 - *cumulativeImpact;
+
+                    printf(
+                        "Escort #%d hit B at %.2f seconds "
+                        "(impact %.2f%%).\n",
+                        e->id,
+                        impactTime,
+                        e->impactPower * 100.0
                     );
 
+                    if (*cumulativeImpact >= 1.0)
+                    {
+                        field->battleship.status = SUNK;
+                        result->battleshipSunk = 1;
+                        result->killerEscortId = e->id;
+                        result->killerTime = impactTime;
+                        result->duration = impactTime;
+                        return;
+                    }
+                }
+
+                /*
+                 * This E can fire again after its TE interval.
+                 */
+                nextEShot[i] += e->firingInterval;
+            }
+        }
+
+        if (field->battleship.status != ALIVE)
+        {
+            break;
+        }
+
+        /*
+         * Process B's firing event.
+         */
+        if (bEvent)
+        {
+            int target;
+            double velocity;
+            double angle;
+            double flightTime;
+
+            target = selectTarget(
+                field,
+                minAngle,
+                maxAngle
+            );
+
+            if (target != -1)
+            {
+                velocity = randomDouble(
+                    0.0,
+                    field->battleship.maxVelocity
+                );
 
                 field->battleship.shotsFired++;
-
 
                 if (canHit(
                         field->battleship.position,
@@ -507,81 +592,68 @@ static void runRound(
                         &angle,
                         &flightTime))
                 {
-                    field->battleship.lastShotVelocity =
-                        velocity;
+                    double impactTime =
+                        currentTime + flightTime;
 
-                    field->battleship.lastShotAngle =
-                        angle;
+                    field->battleship.lastShotVelocity = velocity;
+                    field->battleship.lastShotAngle = angle;
+                    field->battleship.lastFlightTime = flightTime;
 
-                    field->battleship.lastFlightTime =
-                        flightTime;
+                    /*
+                     * In Parts 1-A/B/C a successful B
+                     * attack destroys E. The target is
+                     * removed now, while impactTime is
+                     * stored as the shell arrival time.
+                     */
+                    field->escorts[target].status = SUNK;
+                    field->escorts[target].health = 0.0;
 
-
-                    field->escorts[target].status =
-                        SUNK;
-
-                    field->escorts[target].health =
-                        0.0;
-
-
-                    if (result->hitCount <
-                        MAX_ESCORTS)
+                    if (result->hitCount < MAX_ESCORTS)
                     {
-                        result->hitIds[
-                            result->hitCount] =
+                        result->hitIds[result->hitCount] =
                             field->escorts[target].id;
 
-                        result->hitTimes[
-                            result->hitCount] =
-                            currentTime +
-                            flightTime;
+                        result->hitTimes[result->hitCount] =
+                            impactTime;
 
                         result->hitCount++;
                     }
 
-
-                    if (currentTime +
-                        flightTime >
-                        result->duration)
+                    if (impactTime > lastImpactTime)
                     {
-                        result->duration =
-                            currentTime +
-                            flightTime;
+                        lastImpactTime = impactTime;
                     }
 
-
                     printf(
-                        "B destroyed Escort #%d.\n",
-                        field->escorts[target].id
+                        "B fired at Escort #%d at %.2f seconds "
+                        "and hit at %.2f seconds.\n",
+                        field->escorts[target].id,
+                        currentTime,
+                        impactTime
                     );
                 }
             }
 
-
-            nextBShot +=
-                firingInterval;
+            /*
+             * The next B firing is exactly TB seconds later.
+             */
+            nextBShot += firingInterval;
         }
 
-
         /*
-         * If there are no reachable escorts,
-         * this simulation step is finished.
+         * If B has no target and no escort can ever
+         * hit B from the current fixed position, the
+         * battle cannot make any further progress.
          */
-        if (selectTarget(
-                field,
-                minAngle,
-                maxAngle) == -1)
+        if (selectTarget(field, minAngle, maxAngle) == -1 &&
+            findNextEscortTime(field, nextEShot) >= 1.0e29)
         {
             break;
         }
-
-
-        currentTime += 1.0;
     }
 
-
-    result->cumulativeImpact =
-        *cumulativeImpact;
+    result->duration = lastImpactTime;
+    result->cumulativeImpact = *cumulativeImpact;
 }
 
 
@@ -746,6 +818,73 @@ static void saveResult(
 
 
 /*
+ * Save a final summary so that the
+ * Simulation Statistics menu can load
+ * the result after the simulation ends.
+ */
+static void saveSummary(
+    const Battlefield *field,
+    const char *filename,
+    double totalTime,
+    double cumulativeImpact)
+{
+    FILE *file;
+    int i;
+    int destroyed = 0;
+
+    file = fopen(filename, "w");
+
+    if (file == NULL)
+    {
+        printf("Cannot create %s\n", filename);
+        return;
+    }
+
+    for (i = 0; i < field->escortCount; i++)
+    {
+        if (field->escorts[i].status == SUNK)
+        {
+            destroyed++;
+        }
+    }
+
+    fprintf(file, "PART 2-B SUMMARY\n\n");
+    fprintf(file, "Battleship Status: %s\n",
+            field->battleship.status == ALIVE
+                ? "SURVIVED"
+                : "SUNK");
+    fprintf(file, "Battleship Health: %.2f%%\n",
+            field->battleship.health * 100.0);
+    fprintf(file, "Battleship Firings: %d\n",
+            field->battleship.shotsFired);
+    fprintf(file, "Total Battle Time: %.2f seconds\n",
+            totalTime);
+    fprintf(file, "Escorts Destroyed: %d\n", destroyed);
+    fprintf(file, "Escorts Remaining: %d\n",
+            field->escortCount - destroyed);
+    fprintf(file, "Cumulative Impact on B: %.2f%%\n",
+            cumulativeImpact * 100.0);
+
+    fprintf(file, "\nFINAL ESCORT STATUS\n");
+
+    for (i = 0; i < field->escortCount; i++)
+    {
+        fprintf(file,
+                "Escort #%d (%s): %s, Health=%.2f%%, Firings=%d\n",
+                field->escorts[i].id,
+                getEscortTypeName(field->escorts[i].type),
+                field->escorts[i].status == ALIVE
+                    ? "ALIVE"
+                    : "SUNK",
+                field->escorts[i].health * 100.0,
+                field->escorts[i].shotsFired);
+    }
+
+    fclose(file);
+}
+
+
+/*
  * Run Part 2-B Part 1-A simulation.
  */
 static void runPart2B_1A(
@@ -761,6 +900,7 @@ static void runPart2B_1A(
     int orderCount;
 
     double cumulativeImpact = 0.0;
+    double totalTime;
 
 
     resetBattlefield(
@@ -770,6 +910,7 @@ static void runPart2B_1A(
 
 
     srand(seed);
+    totalTime = 0.0;
 
 
     printf(
@@ -803,6 +944,8 @@ static void runPart2B_1A(
         orderCount
     );
 
+    totalTime = result.duration;
+
 
     printf(
         "\nBattleship Status : %s\n",
@@ -827,6 +970,13 @@ static void runPart2B_1A(
         "PART1A",
         firingInterval,
         0.0
+    );
+
+    saveSummary(
+        &field,
+        "part2B_PART1A_summary.txt",
+        totalTime,
+        cumulativeImpact
     );
 }
 
@@ -853,6 +1003,7 @@ static void runPart2BPath(
     int orderCount;
 
     double cumulativeImpact = 0.0;
+    double totalTime = 0.0;
 
     int i;
 
@@ -944,6 +1095,8 @@ static void runPart2BPath(
         }
 
 
+        totalTime += result.duration;
+
         saveResult(
             &field,
             &result,
@@ -997,6 +1150,25 @@ static void runPart2BPath(
     }
 
     printf("========================================\n");
+
+    if (simulationNumber == 1)
+    {
+        saveSummary(
+            &field,
+            "part2B_PART1B_SIMULATION1_summary.txt",
+            totalTime,
+            cumulativeImpact
+        );
+    }
+    else
+    {
+        saveSummary(
+            &field,
+            "part2B_PART1B_SIMULATION2_summary.txt",
+            totalTime,
+            cumulativeImpact
+        );
+    }
 }
 
 
@@ -1022,6 +1194,7 @@ static void runPart2BCPath(
     int orderCount;
 
     double cumulativeImpact = 0.0;
+    double totalTime = 0.0;
 
     int i;
 
@@ -1110,6 +1283,8 @@ static void runPart2BCPath(
         }
 
 
+        totalTime += result.duration;
+
         saveResult(
             &field,
             &result,
@@ -1173,6 +1348,25 @@ static void runPart2BCPath(
     }
 
     printf("========================================\n");
+
+    if (simulationNumber == 1)
+    {
+        saveSummary(
+            &field,
+            "part2B_PART1C_SIMULATION1_summary.txt",
+            totalTime,
+            cumulativeImpact
+        );
+    }
+    else
+    {
+        saveSummary(
+            &field,
+            "part2B_PART1C_SIMULATION2_summary.txt",
+            totalTime,
+            cumulativeImpact
+        );
+    }
 }
 
 
