@@ -448,9 +448,21 @@ static void runStrategicBattleshipAttack(
      * Therefore the firing schedule
      * takes firingAttempts * TB.
      */
-    result->duration =
-        firingAttempts *
-        firingInterval;
+    /*
+     * The first shot is fired at t = 0.
+     * Therefore N firing attempts occupy only
+     * (N - 1) firing intervals.
+     */
+    if (firingAttempts > 0)
+    {
+        result->duration =
+            (firingAttempts - 1) *
+            firingInterval;
+    }
+    else
+    {
+        result->duration = 0.0;
+    }
 
 
     /*
@@ -1547,4 +1559,4 @@ void runPart2A(Battlefield *field)
         "PART 2-A COMPLETED\n");
     printf(
         "========================================\n");
-}
+}  
